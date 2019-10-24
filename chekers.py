@@ -1,0 +1,526 @@
+from message import make_message_line, make_full_message
+from make_tokens import get_encoding
+import configparser
+import re
+
+
+def check_correct_module(tokens, i):
+    pattern = re.compile(r':\s*\n')
+    return pattern.search(tokens[i].all_string)
+
+
+def count_dedents(tokens, i):
+    res = 0
+    if tokens[i].token_type == "DEDENT":
+        res += 1
+    j = 1
+    while True:
+        if tokens[i - j].token_type == "DEDENT":
+            res += 1
+            j += 1
+        else:
+            break
+    return res
+
+
+def find_last_module_element(tokens, i):
+    j = 1
+    while True:
+        if tokens[i - j].content != '\n' and tokens[i - j].token_type != "DEDENT":
+            return tokens[i - j]
+        else:
+            j += 1
+
+
+def module_lines(tokens, length):
+    if len(tokens) > length:
+        return make_full_message(str(0), str(0), 'A0000')
+    else:
+        return ""
+
+
+def line_break_bin_op(tokens, i):
+    operators = ['+', '-', '*', '**', '/', '//', '%', '<<', '>>', '&', '|',
+                 '^', '~', '<', '>', '<=', '>=', '==', '!=', '<>', '=', '+=',
+                 '-=', '*=', '/=', '%=', '**=', '//=', 'not', 'and', 'or']
+    if tokens[i].content in operators and tokens[i + 1].content == '\n':
+        return make_full_message(tokens[i].start[0], tokens[i].finish[1], 'A0006')
+    else:
+        return ""
+
+
+def check_list_args_indent(tokens, i, indent):
+    if tokens[i].content == '[' and tokens[i - 1].content == '=' and tokens[i + 1].content != ']':
+        start_col = find_line_start(tokens, i)
+        if tokens[i + 1].content == "\n":
+            good_indent = start_col + indent
+            j = 2
+            br = 1
+            while True:
+                if tokens[i + j - 1].content == '\n':
+                    if tokens[i + j].start[1] != good_indent:
+                        if tokens[i + j].content == ']' and tokens[i + j].start[1] == start_col:
+                            pass
+                        else:
+                            print(make_full_message(tokens[i + j].start[0], tokens[i + j].start[1], 'I0002'))
+                if tokens[i + j].content == '[':
+                    br += 1
+                elif tokens[i + j].content == ']':
+                    br -= 1
+                j += 1
+                if br == 0:
+                    break
+        else:
+            good_indent = tokens[i + 1].start[1]
+            j = 2
+            br = 1
+            while True:
+                if tokens[i + j - 1].content == '\n':
+                    if tokens[i + j].start[1] != good_indent:
+                        if tokens[i + j].content == ']' and tokens[i + j].start[1] == start_col:
+                            pass
+                        else:
+                            print(make_full_message(tokens[i + j].start[0], tokens[i + j].start[1], 'I0002'))
+                if tokens[i + j].content == '[':
+                    br += 1
+                elif tokens[i + j].content == ']':
+                    br -= 1
+                j += 1
+                if br == 0:
+                    break
+
+
+def check_func_args_indent(tokens, i, indent):
+    if tokens[i - 1].content == 'def':
+        col_start = tokens[i - 1].start[1]
+        if tokens[i + 2].content == '\n':
+            good_indent = col_start + indent * 2
+            j = 3
+            br = 1
+            while True:
+                if tokens[i + j - 1].content == '\n':
+                    if tokens[i + j].start[1] != good_indent:
+                        if tokens[i + j].content == ')' and tokens[i + j].start[1] == col_start:
+                            pass
+                        else:
+                            print(make_full_message(tokens[i + j].start[0], tokens[i + j].start[1], 'I0001'))
+                if tokens[i + j].content == '(':
+                    br += 1
+                elif tokens[i + j].content == ')':
+                    br -= 1
+                j += 1
+                if br == 0:
+                    break
+
+        else:
+            good_indent = tokens[i + 2].start[1]
+            if tokens[i + 2].content == ')':
+                pass
+            else:
+                j = 3
+                br = 1
+                while True:
+                    if tokens[i + j - 1].content == '\n':
+                        if tokens[i + j].start[1] != good_indent:
+                            print(make_full_message(tokens[i + j].start[0], tokens[i + j].start[1], 'I0001'))
+                    if tokens[i + j].content == '(':
+                        br += 1
+                    elif tokens[i + j].content == ')':
+                        br -= 1
+                    j += 1
+                    if br == 0:
+                        break
+    else:
+        if tokens[i + 2].content == '\n':
+            col_start = find_line_start(tokens, i)
+            good_indent = col_start + indent
+            j = 3
+            br = 1
+            while True:
+                if br == 0:
+                    break
+                if tokens[i + j - 1].content == '\n':
+                    if tokens[i + j].start[1] != good_indent:
+                        if tokens[i + j].content == ')' and tokens[i + j].start[1] == col_start:
+                            pass
+                        else:
+                            print(make_full_message(tokens[i + j].start[0], tokens[i + j].start[1], 'I0001'))
+                if tokens[i + j].content == ')':
+                    br -= 1
+                elif tokens[i + j].content == '(':
+                    br += 1
+                j += 1
+        else:
+            good_indent = tokens[i + 2].start[1]
+            if tokens[i + 2].content == ')':
+                pass
+            else:
+                j = 3
+                br = 1
+                while True:
+                    if tokens[i + j - 1].content == '\n':
+                        if tokens[i + j].start[1] != good_indent:
+                            print(make_full_message(tokens[i + j].start[0], tokens[i + j].start[1], 'I0001'))
+                    if tokens[i + j].content == '(':
+                        br += 1
+                    elif tokens[i + j].content == ')':
+                        br -= 1
+                    j += 1
+                    if br == 0:
+                        break
+
+
+def find_line_start(tokens, i):
+    j = 1
+    types = ["ENC", "INDENT", "DEDENT", "NL"]
+    while True:
+        if tokens[i - j].token_type in types:
+            res = tokens[i - j + 1].start[1]
+            break
+        else:
+            j += 1
+    return res
+
+
+def find_line_start_e(tokens, i):
+    j = 1
+    flag = False
+    types = ["ENC", "INDENT", "DEDENT", "NL"]
+    while True:
+        if tokens[i - j].token_type in types:
+            if tokens[i - j].token_type == "DEDENT" and tokens[i - j].start[0] > tokens[i].start[0]:
+                j += 1
+                flag = True
+            else:
+                if flag and j == 2:
+                    res = tokens[i]
+                else:
+                    res = tokens[i - j + 1]
+                break
+        else:
+            j += 1
+    # print("Element " + str(tokens[i].start) + " start is " + str(res.start))
+    return res
+
+
+def check_trailing_space(tokens, i):
+    if tokens[i].content == '\n' and tokens[i - 1].finish[0] == tokens[i].start[0]:
+        if tokens[i].start[1] - tokens[i - 1].finish[1] > 0:
+            return make_full_message(tokens[i].start[0], tokens[i].start[1], 'A0005')
+    return ""
+
+
+def one_space_between_name_and_operator(tokens, i):
+    if tokens[i].token_type == "OP" and tokens[i - 1].token_type == "NAME":
+        if tokens[i].start[1] - tokens[i - 1].finish[1] > 1:
+            return make_full_message(tokens[i].start[0], tokens[i].start[1], 'A0004')
+    return ""
+
+
+def check_func_call_space(tokens, i, w):
+    if tokens[i].content in ['(', '['] and tokens[i - 1].token_type == "NAME" and tokens[i].start[0] == tokens[i - 1].start[0]:
+        if w == 'yes':
+            if tokens[i].start[1] - tokens[i - 1].finish[1] > 1:
+                return make_full_message(tokens[i].start[0], tokens[i].start[1], 'A0003')
+            if tokens[i].start[1] == tokens[i - 1].finish[1]:
+                return make_full_message(tokens[i].start[0], tokens[i].start[1], 'A0001')
+        elif w == 'no':
+            if tokens[i].start[1] != tokens[i - 1].finish[1]:
+                return make_full_message(tokens[i].start[0], tokens[i].start[1], 'A0002')
+    return ""
+
+
+def ext_slice_colon_spaces(token, w):
+    if w == 'yes':
+        if re.search(r'\[\s*\w*\s*:\s*\w*\s*\]', token.all_string) \
+                and not re.search(r'\[\s*\w*\s:\s\w*\s*\]', token.all_string):
+            return make_full_message(token.start[0], token.start[1], 'A0000')
+        elif re.search(r'\[\s*\w*\s*:\s*\w*\s*:\s*\w*\s*\]', token.all_string) \
+                and not re.search(r'\[\s*\w*\s:\s\w*\s:\s\w*\s*\]', token.all_string):
+            return make_full_message(token.start[0], token.start[1], 'A0000')
+
+    elif w == 'no':
+        if re.search(r'\[\s*\w*\s*:\s*\w*\s*\]', token.all_string) \
+                and not re.search(r'\[\s*\w*:\w*\s*\]', token.all_string):
+            return make_full_message(token.start[0], token.start[1], 'A0000')
+        elif re.search(r'\[\s*\w*\s*:\s*\w*\s*:\s*\w*\s*]', token.all_string) \
+                and not re.search(r'\[\s*\w*:\w*:\w*\s*]', token.all_string):
+            return make_full_message(token.start[0], token.start[1], 'A0000')
+
+    return ""
+
+
+def line_is_long(token, length):
+    if token.start[1] > length or token.finish[1] > length:
+        return make_message_line(str(token.start[0]), 'C0301')
+    else:
+        return ""
+
+
+def docstr_line_is_long(token, length):
+    start_col = token.start[1]
+    lines = token.content.split('\n')
+    if start_col + len(lines[0]) > length:
+        return make_full_message(str(token.start[0]), str(start_col + len(lines[0])), 'C0301')
+    for i in range(1, len(lines)):
+        if len(lines[i]) > length:
+            return make_full_message(str(token.start[0] + i), str(len(lines[i])), 'C0301')
+    return ""
+
+
+def blank_line_in_the_end(tokens):
+    line_number = str(tokens[-1].start[0])
+    if tokens[-1].content != '\n' and tokens[-2].content != '\n':
+        element_number = str(tokens[-2].finish[1])
+        print(make_full_message(line_number, element_number, 'C0304'))
+
+
+def check_white_spaces(tokens, i):
+    symbols = [':', ';', ',']
+    pattern = re.compile(r'\[\s*\w*\s*:\s*\w*\s*(:\s*\w*\s*)?\]')
+    match = pattern.search(tokens[i].all_string)
+    if tokens[i].content == ':' and match:
+        config = configparser.ConfigParser()
+        config.read('config.ini')
+        w = config['OPTIONAL']['ExtSliceColonSpaces']
+        out = ext_slice_colon_spaces(tokens[i], w)
+        if out != "":
+            print(out)
+
+    elif tokens[i].content in symbols:
+        if ' ' + tokens[i].content in tokens[i].all_string:
+            line_number = str(tokens[i].start[0])
+            element_number = str(tokens[i].start[1] - 1)
+            print(make_full_message(line_number, element_number, 'C0326'))
+
+    closing_braces = ['}', ')', ']']
+    opening_braces = ['{', '(', '[']
+    if tokens[i].content in opening_braces:
+        if tokens[i].content + ' ' in tokens[i].all_string:
+            line_number = str(tokens[i].start[0])
+            element_number = str(tokens[i].start[1])
+            print(make_full_message(line_number, element_number, 'C0326'))
+
+    elif tokens[i].content in closing_braces:
+        if ' ' + tokens[i].content in tokens[i].all_string and tokens[i - 1].content != '\n':
+            if tokens[i - 1].content == ',' and tokens[i - 1].finish[0] == tokens[i].start[0] \
+                    and tokens[i].start[1] - tokens[i - 1].finish[1] == 1:
+                pass
+            else:
+                line_number = str(tokens[i].start[0])
+                element_number = str(tokens[i].start[1])
+                print(make_full_message(line_number, element_number, 'C0326'))
+
+    operators = ['==', '!=', '<>', '<=', '>=', '<', '>', '=', '+=', '-=',
+                 '*=', '**=', '/=', '//=', '&=', '|=', '^=', '%=', '>>=', '<<=']
+    if tokens[i].content in operators:
+        if tokens[i].content + ' ' not in tokens[i].all_string and ' ' + tokens[i].content not in tokens[i].all_string:
+            line_number = str(tokens[i].start[0])
+            element_number = str(tokens[i].start[1])
+            print(make_full_message(line_number, element_number, 'C0326'))
+
+
+def check_unnecessary_parentheses(tokens, i):
+    keywords = ['assert', 'del', 'elif', 'except', 'for', 'in', 'if', 'not', 'raise', 'return', 'while', 'yield']
+    if tokens[i].content in keywords:
+        line_number = tokens[i].start[0]
+        if tokens[i+1].content == '(':
+            flag = True
+            n = 2
+            while flag:
+                if tokens[i + n].content == ')' and (tokens[i + n + 1].content == ':' or tokens[i + n + 1].content == '\n'):
+                    flag = False
+                    print(make_full_message(tokens[i + 1].start[0], tokens[i + 1].start[1], 'C0325'))
+                n += 1
+
+
+def check_multiple_importing(tokens, i):
+    if tokens[i].content == 'import' and 'from' not in tokens[i].all_string and tokens[i + 2].content == ',' and tokens[i + 3].token_type == "NAME":
+        line_number = tokens[i].start[0]
+        print(make_message_line(str(line_number), 'C0410'))
+
+
+def check_star_importing(tokens, i):
+    if tokens[i].content == 'import' and 'from' in tokens[i].all_string:
+        if tokens[i + 1].content == '*':
+            return make_full_message(tokens[i + 1].start[0], tokens[i + 1].start[1], 'A0007')
+    return ""
+
+
+def check_several_statements(tokens, i):
+    if tokens[i].content == ';' and tokens[i + 1].token_type == "NAME":
+        line_number = tokens[i].start[0]
+        element_number = tokens[i].start[1]
+        print(make_full_message(str(line_number), str(element_number), 'C0321'))
+
+
+def check_trailing_semicolon(tokens, i):
+    if tokens[i].content == ';' and tokens[i + 1].content == '\n':
+        line_number = tokens[i].start[0]
+        element_number = tokens[i].start[1]
+        print(make_full_message(str(line_number), str(element_number), 'C0305'))
+
+
+def check_encoding(file_name, encoding):
+    actual_encoding = get_encoding(file_name)
+    if actual_encoding != encoding:
+        print(make_message_line('0', 'E0501'))
+
+
+def check_single_comments_pep8(tokens, i):
+    if tokens[i].token_type == "COMMENT":
+        types = ["INDENT", "DEDENT", "ENC", "NL"]
+        if tokens[i - 1].token_type not in types and tokens[i].start[1] - tokens[i - 1].finish[1] < 2:
+            print(make_full_message(tokens[i].start[0], tokens[i].start[1], 'S0001'))
+
+        if tokens[i].content[1] != ' ':
+            print(make_full_message(tokens[i].start[0], tokens[i].start[1], 'S0002'))
+        elif tokens[i].content[2] == ' ':
+            print(make_full_message(tokens[i].start[0], tokens[i].start[1], 'S0002'))
+
+
+def check_multi_comments_pep8(tokens, i):
+    lines = tokens[i].content.split('\n')
+    if len(lines) == 2 and lines[1][-3:] == '\'\'\'':
+        return make_full_message(tokens[i].finish[0], tokens[i].finish[1], 'A0008')
+    return ""
+
+
+def check_multi_com_indent(tokens, i):
+    j = 1
+    res = tokens[i]
+    while True:
+        if tokens[i - j].token_type not in ['INDENT', 'DEDENT', 'NL', 'ENC']:
+            res = tokens[i - j]
+            break
+        else:
+            j += 1
+    while True:
+        if tokens[i - j].token_type in ['INDENT', 'DEDENT', 'NL', 'ENC']:
+            res = tokens[i - j + 1]
+            break
+        else:
+            j += 1
+    if tokens[i].start[1] != res.start[1]:
+        return make_full_message(tokens[i].start[0], tokens[i].start[1], 'A0009')
+    return ""
+
+
+def check_is_multi_comment(tokens, i):
+    return find_line_start_e(tokens, i) == tokens[i]
+
+
+def check_type(tokens, i, t_type):
+    return tokens[i].token_type == t_type
+
+
+def check_eq_spaces_in_func(tokens, i):
+    in_func = False
+    in_func_2 = False
+    if tokens[i - 1].token_type != "NAME":
+        return "no"
+    j = 2
+    while True:
+        try:
+            if tokens[i - j].content == '\n':
+                j += 1
+            elif tokens[i - j].content == ',' or tokens[i - j].content == '(':
+                in_func = True
+                break
+            elif tokens[i - j].content == ':' and tokens[i - j - 1].token_type == "NAME":
+                y = 2
+                while True:
+                    if tokens[i - j - y].content == '\n':
+                        y += 1
+                    elif tokens[i - j - y].content == ',' or tokens[i - j - y].content == '(':
+                        in_func_2 = True
+                        break
+                    else:
+                        in_func_2 = False
+                        break
+                break
+            else:
+                in_func = False
+                break
+        except IndexError:
+            return "no"
+    if not in_func and not in_func_2:
+        return "no"
+
+    if in_func:
+        if tokens[i].start[1] - tokens[i - 1].finish[1] > 0 and tokens[i + 1].start[1] - tokens[i].finish[1] > 0:
+            return make_full_message(tokens[i].start[0], tokens[i].start[1], 'C0327')
+        else:
+            return ""
+
+    if in_func_2:
+        if tokens[i].start[1] - tokens[i - 1].finish[1] != 1 and tokens[i + 1].start[1] - tokens[i].finish[1] != 1:
+            return make_full_message(tokens[i].start[0], tokens[i].start[1], 'C0327')
+        else:
+            return ""
+
+    return "no"
+
+
+def check_is_name_valid(tokens, i):
+    invalid_names = ['l', 'O', 'I']
+    if tokens[i].content in invalid_names:
+        return make_full_message(tokens[i].start[0], tokens[i].start[1], 'N0001')
+    return ""
+
+
+def is_ascii(tokens, i):
+    if tokens[i].token_type == "NAME":
+        if not all(ord(c) < 128 for c in tokens[i].content):
+            return make_full_message(tokens[i].start[0], tokens[i].start[1], 'N0002')
+    return ""
+
+
+def is_snake_case(tokens, i):
+    word = tokens[i].content
+    if tokens[i].content[:2] == tokens[i].content[-2:] == '__':
+        word = tokens[i].content[2:-2]
+    pattern = re.compile(r'\b_?[a-z]+[0-9]*(_?[0-9a-z]*)*_?\b')
+
+    if not pattern.match(word):
+        return make_full_message(tokens[i].start[0], tokens[i].start[1], 'N0003')
+    return ""
+
+
+def is_camel_case(tokens, i):
+    word = tokens[i].content
+    pattern = re.compile(r'\b[a-zA-Z0-9]+\b')
+    if not pattern.match(word) or word == word.upper():
+        return make_full_message(tokens[i].start[0], tokens[i].start[1], 'N0004')
+    return ""
+
+
+def is_upper_camel(tokens, i):
+    word = tokens[i].content
+    pattern = re.compile(r'\b([A-Z]+[a-z0-9]*)+\b')
+    if not pattern.match(word) or word == word.upper():
+        return make_full_message(tokens[i].start[0], tokens[i].start[1], 'N0005')
+    return ""
+
+
+def check_func_spaces_1(tokens, i, lines):
+    j = 1
+    flag = False
+    nls = 0
+    try:
+        while True:
+            if tokens[i - j].content == '\n':
+                j += 1
+                nls += 1
+            elif j == 3 and tokens[i - j].content == ':':
+                flag = True
+                break
+            elif tokens[i - j].token_type == "INDENT" or tokens[i - j].token_type == "DEDENT":
+                j += 1
+            else:
+                break
+    except IndexError:
+        pass
+    if not flag and nls - 1 != lines:
+        return make_full_message(tokens[i].start[0], tokens[i].start[1], 'L0001')
+    return ""
