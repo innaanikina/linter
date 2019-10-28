@@ -25,24 +25,25 @@ def check_tokens(tokens):
     print(result)
 
 
-def main(files):
+def main(conf_file, file):
+    print(file)
 
     line = 0
     module_content = []
     mod_lvl = -1
     checked = False
-    tokens = Tokenizer.make_token_objects('example.py')
+    tokens = Tokenizer.make_token_objects(file)
 
     class_started = False
     class_start = (-1, -1)
 
     config = configparser.ConfigParser()
-    config.read('config.ini')
+    config.read(conf_file)
     encoding = config['DEFAULT']['Encoding']
     indent = int(config['DEFAULT']['Indent'])
 
     if encoding != '':
-        check_encoding('example.py', encoding)
+        check_encoding(file, encoding)
 
     for i in range(len(tokens)):
         if tokens[i].content == '=' and config['DEFAULT']['FuncArgEqNoSpace'] == 'yes':
@@ -217,14 +218,17 @@ def main(files):
         blank_line_in_the_end(tokens)
 
 
-    print(files)
-
-
 if __name__ == "__main__":
-    res = []
-    if len(sys.argv) == 1:
-        print('\nПример запуска программы: linter_program.py file1.py file2.py')
-    elif len(sys.argv) > 1:
-        for e in range(1, len(sys.argv)):
-            res.append(sys.argv[e])
-        main(res)
+    files = []
+    if len(sys.argv) < 3:
+        print('\nПример запуска программы: linter_program.py' +
+              ' config.ini file1.py file2.py')
+    elif len(sys.argv) > 2:
+        conf_file = sys.argv[1]
+        for e in range(2, len(sys.argv)):
+            files.append(sys.argv[e])
+        try:
+            for file in files:
+                main(conf_file, file)
+        except FileNotFoundError:
+            print('Ошибка! Файл не найден: ' + file)
