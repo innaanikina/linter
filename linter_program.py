@@ -75,14 +75,21 @@ def main(conf_file, file):
             check_multiple_importing(tokens, i)
         if config['DEFAULT']['WhiteSpaces'] == 'yes' and not checked:
             check_white_spaces(tokens, i)
-        if config['DEFAULT']['ParenthesesAroundKeywords'] == 'no':
-            check_unnecessary_parentheses(tokens, i)
-        if config['DEFAULT']['SeveralStatementsInLine'] == 'no':
-            check_several_statements(tokens, i)
-        if config['DEFAULT']['TrailingSemicolon'] == 'no':
-            check_trailing_semicolon(tokens, i)
+        if config['DEFAULT']['ParenthesesAroundKeywords'] == 'no':  # DONE
+            out = check_unnecessary_parentheses(tokens, i, file)
+            if out:
+                print(out)
+        if config['DEFAULT']['SeveralStatementsInLine'] == 'no':  # DONE
+            out = check_several_statements(tokens, i, file)
+            if out:
+                print(out)
 
-        if config['DEFAULT']['MaxLineLength'] != 'no' and tokens[i].start[0] != line:
+        if config['DEFAULT']['TrailingSemicolon'] == 'no':  # DONE
+            out = check_trailing_semicolon(tokens, i, file)
+            if out:
+                print(out)
+
+        if config['DEFAULT']['MaxLineLength'] != 'no' and tokens[i].start[0] != line:  # almost DONE
             if tokens[i].token_type == "COMMENT":
                 length = int(config['DEFAULT']['MaxLineDocCom'])
                 out = line_is_long(tokens[i], length)

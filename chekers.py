@@ -291,7 +291,7 @@ def check_white_spaces(tokens, i):
         config.read('config.ini')
         w = config['OPTIONAL']['ExtSliceColonSpaces']
         out = ext_slice_colon_spaces(tokens[i], w)
-        if out != "":
+        if out:
             print(out)
 
     elif tokens[i].content in symbols:
@@ -327,17 +327,16 @@ def check_white_spaces(tokens, i):
             print(make_full_message(line_number, element_number, 'C0326'))
 
 
-def check_unnecessary_parentheses(tokens, i):
+def check_unnecessary_parentheses(tokens, i, file_name):
     keywords = ['assert', 'del', 'elif', 'except', 'for', 'in', 'if', 'not', 'raise', 'return', 'while', 'yield']
     if tokens[i].content in keywords:
-        line_number = tokens[i].start[0]
         if tokens[i+1].content == '(':
-            flag = True
             n = 2
-            while flag:
-                if tokens[i + n].content == ')' and (tokens[i + n + 1].content == ':' or tokens[i + n + 1].content == '\n'):
-                    flag = False
-                    print(make_full_message(tokens[i + 1].start[0], tokens[i + 1].start[1], 'C0325'))
+            while True:
+                if tokens[i + n].content == ')' and (tokens[i + n + 1].content == ':'
+                                                     or tokens[i + n + 1].content == '\n'):
+                    return make_message_file(tokens[i + 1].start[0],
+                                             tokens[i + 1].start[1], 'C0325', file_name)
                 n += 1
 
 
@@ -354,19 +353,18 @@ def check_star_importing(tokens, i):
     return ""
 
 
-def check_several_statements(tokens, i):
+def check_several_statements(tokens, i, file_name):
     if tokens[i].content == ';' and tokens[i + 1].token_type == "NAME":
         line_number = tokens[i].start[0]
         element_number = tokens[i].start[1]
-        print(make_full_message(str(line_number), str(element_number), 'C0321'))
+        return make_message_file(line_number, element_number, 'C0321', file_name)
 
 
-def check_trailing_semicolon(tokens, i):
+def check_trailing_semicolon(tokens, i, file_name):
     if tokens[i].content == ';' and tokens[i + 1].content == '\n':
         line_number = tokens[i].start[0]
         element_number = tokens[i].start[1]
-        print(make_full_message(str(line_number), str(element_number), 'C0305'))
-
+        return make_message_file(line_number, element_number, 'C0305', file_name)
 
 def check_encoding(file_name, encoding):
     actual_encoding = get_encoding(file_name)
