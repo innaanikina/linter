@@ -1,4 +1,4 @@
-from message import make_message_line, make_full_message
+from message import make_message_line, make_full_message, make_message_file
 from make_tokens import get_encoding
 import configparser
 import re
@@ -253,6 +253,13 @@ def ext_slice_colon_spaces(token, w):
 def line_is_long(token, length):
     if token.start[1] > length or token.finish[1] > length:
         return make_message_line(str(token.start[0]), 'C0301')
+    else:
+        return ""
+
+
+def line_is_long_1(token, length, file_name):
+    if token.start[1] > length or token.finish[1] > length:
+        return make_message_file(token.finish[0], token.finish[1], 'C0301', file_name)
     else:
         return ""
 

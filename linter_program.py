@@ -5,7 +5,7 @@ from chekers import check_multiple_importing, check_white_spaces, \
     check_list_args_indent, line_break_bin_op, check_star_importing, check_single_comments_pep8, \
     find_last_module_element, count_dedents, check_correct_module, check_multi_comments_pep8, check_is_multi_comment, \
     check_multi_com_indent, check_eq_spaces_in_func, check_is_name_valid, is_snake_case, is_camel_case, is_upper_camel, \
-    check_func_spaces_1
+    check_func_spaces_1, line_is_long_1
 import configparser
 from tokenizer import Tokenizer
 from make_tokens import is_function, tokenize_file, read_file, is_func_decl, is_class_decl, get_class_start, is_end
@@ -91,7 +91,7 @@ def main(conf_file, file):
                 out = docstr_line_is_long(tokens[i], length)
             else:
                 length = int(config['DEFAULT']['MaxLineLength'])
-                out = line_is_long(tokens[i], length)
+                out = line_is_long_1(tokens[i], length, file)
             if out != "":
                 line = tokens[i].start[0]
                 print(out)
@@ -122,7 +122,6 @@ def main(conf_file, file):
                         out = check_multi_comments_pep8(tokens, i)
                         if out:
                             print(out)
-                            out = ""
                         out = check_multi_com_indent(tokens, i)
                         if out != "":
                             print(out)
@@ -232,3 +231,5 @@ if __name__ == "__main__":
                 main(conf_file, file)
         except FileNotFoundError:
             print('Ошибка! Файл не найден: ' + file)
+        except PermissionError:
+            print("Ошибка доступа")
