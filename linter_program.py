@@ -40,14 +40,14 @@ def main(conf_file, file):
     config = configparser.ConfigParser()
     config.read(conf_file)
     encoding = config['DEFAULT']['Encoding']
-    indent = int(config['DEFAULT']['Indent'])
+    indent = 4
 
     if encoding != '':
         check_encoding(file, encoding)
 
     for i in range(len(tokens)):
-        if tokens[i].content == '=' and config['DEFAULT']['FuncArgEqNoSpace'] == 'yes':
-            out = check_eq_spaces_in_func(tokens, i)
+        if tokens[i].content == '=' and config['DEFAULT']['FuncArgEqNoSpace'] == 'yes':  # DONE
+            out = check_eq_spaces_in_func(tokens, i, file)
             if out != "" and out != "no":
                 print(out)
                 checked = True
@@ -55,39 +55,38 @@ def main(conf_file, file):
                 checked = True
 
         if is_function(tokens, i):
-            if config['OPTIONAL']['Pep8FuncArgs'] == 'yes':
-                check_func_args_indent(tokens, i, indent)  # сделать нормальный вывод, с return
+            if config['OPTIONAL']['Pep8FuncArgs'] == 'yes':  # TODO
+                out = check_func_args_indent(tokens, i, indent, file)
+                if out:
+                    for s in out:
+                        print(s)
 
-        if config['OPTIONAL']['Pep8ListArgs'] == 'yes':
-            check_list_args_indent(tokens, i, indent)
+        if config['OPTIONAL']['Pep8ListArgs'] == 'yes':  # DONE
+            out = check_list_args_indent(tokens, i, indent, file)
+            if out:
+                for s in out:
+                    print(s)
 
-        if config['DEFAULT']['LineBreakAfterBinOp'] == 'no':
-            out = line_break_bin_op(tokens, i)
-            if out != "":
-                print(out)
+        if config['DEFAULT']['LineBreakAfterBinOp'] == 'no':  # DONE
+            check_print(line_break_bin_op(tokens, i, file))
 
-        if config['DEFAULT']['StarImport'] == 'no':
-            out = check_star_importing(tokens, i)
-            if out != "":
-                print(out)
+        if config['DEFAULT']['StarImport'] == 'no':  # DONE
+            check_print(check_star_importing(tokens, i, file))
 
-        if config['DEFAULT']['OneImportAtATime'] == 'yes':
-            check_multiple_importing(tokens, i)
-        if config['DEFAULT']['WhiteSpaces'] == 'yes' and not checked:
+        if config['DEFAULT']['OneImportAtATime'] == 'yes':  # DONE
+            check_print(check_multiple_importing(tokens, i, file))
+
+        if config['DEFAULT']['WhiteSpaces'] == 'yes' and not checked:  # TODO
             check_white_spaces(tokens, i)
+
         if config['DEFAULT']['ParenthesesAroundKeywords'] == 'no':  # DONE
-            out = check_unnecessary_parentheses(tokens, i, file)
-            if out:
-                print(out)
+            check_print(check_unnecessary_parentheses(tokens, i, file))
+
         if config['DEFAULT']['SeveralStatementsInLine'] == 'no':  # DONE
-            out = check_several_statements(tokens, i, file)
-            if out:
-                print(out)
+            check_print(check_several_statements(tokens, i, file))
 
         if config['DEFAULT']['TrailingSemicolon'] == 'no':  # DONE
-            out = check_trailing_semicolon(tokens, i, file)
-            if out:
-                print(out)
+            check_print(check_trailing_semicolon(tokens, i, file))
 
         if config['DEFAULT']['MaxLineLength'] != 'no' and tokens[i].start[0] != line:  # almost DONE
             if tokens[i].token_type == "COMMENT":
@@ -104,9 +103,7 @@ def main(conf_file, file):
                 print(out)
 
         if config['SPACES']['FuncCallSpace'] != '-':
-            out = check_func_call_space(tokens, i, config['SPACES']['FuncCallSpace'])
-            if out != "":
-                print(out)
+            check_print(check_func_call_space(tokens, i, config['SPACES']['FuncCallSpace'], file))
 
         if config['DEFAULT']['SpacesBetweenNameAndOperator'] == str(1):
             out = one_space_between_name_and_operator(tokens, i)
@@ -222,6 +219,11 @@ def main(conf_file, file):
 
     if config['DEFAULT']['EndLine'] == 'yes':
         blank_line_in_the_end(tokens)
+
+
+def check_print(out):
+    if out:
+        print(out)
 
 
 if __name__ == "__main__":

@@ -337,7 +337,7 @@ class Tokenizer(object):
     def get_indent():
         config = configparser.ConfigParser()
         config.read('config.ini')
-        indent = int(config['DEFAULT']['Indent'])
+        indent = 4
         return indent
 
     @staticmethod

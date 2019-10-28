@@ -39,17 +39,19 @@ def module_lines(tokens, length):
         return ""
 
 
-def line_break_bin_op(tokens, i):
+def line_break_bin_op(tokens, i, file_name):
     operators = ['+', '-', '*', '**', '/', '//', '%', '<<', '>>', '&', '|',
                  '^', '~', '<', '>', '<=', '>=', '==', '!=', '<>', '=', '+=',
                  '-=', '*=', '/=', '%=', '**=', '//=', 'not', 'and', 'or']
-    if tokens[i].content in operators and tokens[i + 1].content == '\n':
-        return make_full_message(tokens[i].start[0], tokens[i].finish[1], 'A0006')
+    if tokens[i].content in operators \
+            and tokens[i + 1].content == '\n' and tokens[i - 1].content != "import":
+        return make_message_file(tokens[i].start[0], tokens[i].finish[1], 'A0006', file_name)
     else:
         return ""
 
 
-def check_list_args_indent(tokens, i, indent):
+def check_list_args_indent(tokens, i, indent, file_name):
+    res = []
     if tokens[i].content == '[' and tokens[i - 1].content == '=' and tokens[i + 1].content != ']':
         start_col = find_line_start(tokens, i)
         if tokens[i + 1].content == "\n":
@@ -62,7 +64,10 @@ def check_list_args_indent(tokens, i, indent):
                         if tokens[i + j].content == ']' and tokens[i + j].start[1] == start_col:
                             pass
                         else:
-                            print(make_full_message(tokens[i + j].start[0], tokens[i + j].start[1], 'I0002'))
+                            res.append(make_message_file(tokens[i + j].start[0],
+                                                         tokens[i + j].start[1],
+                                                         'I0002',
+                                                         file_name))
                 if tokens[i + j].content == '[':
                     br += 1
                 elif tokens[i + j].content == ']':
@@ -80,7 +85,10 @@ def check_list_args_indent(tokens, i, indent):
                         if tokens[i + j].content == ']' and tokens[i + j].start[1] == start_col:
                             pass
                         else:
-                            print(make_full_message(tokens[i + j].start[0], tokens[i + j].start[1], 'I0002'))
+                            res.append(make_message_file(tokens[i + j].start[0],
+                                                         tokens[i + j].start[1],
+                                                         'I0002',
+                                                         file_name))
                 if tokens[i + j].content == '[':
                     br += 1
                 elif tokens[i + j].content == ']':
@@ -88,9 +96,11 @@ def check_list_args_indent(tokens, i, indent):
                 j += 1
                 if br == 0:
                     break
+        return res
 
 
-def check_func_args_indent(tokens, i, indent):
+def check_func_args_indent(tokens, i, indent, file_name):
+    res = []
     if tokens[i - 1].content == 'def':
         col_start = tokens[i - 1].start[1]
         if tokens[i + 2].content == '\n':
@@ -103,7 +113,10 @@ def check_func_args_indent(tokens, i, indent):
                         if tokens[i + j].content == ')' and tokens[i + j].start[1] == col_start:
                             pass
                         else:
-                            print(make_full_message(tokens[i + j].start[0], tokens[i + j].start[1], 'I0001'))
+                            res.append(make_message_file(tokens[i + j].start[0],
+                                                         tokens[i + j].start[1],
+                                                         'I0001',
+                                                         file_name))
                 if tokens[i + j].content == '(':
                     br += 1
                 elif tokens[i + j].content == ')':
@@ -122,7 +135,10 @@ def check_func_args_indent(tokens, i, indent):
                 while True:
                     if tokens[i + j - 1].content == '\n':
                         if tokens[i + j].start[1] != good_indent:
-                            print(make_full_message(tokens[i + j].start[0], tokens[i + j].start[1], 'I0001'))
+                            res.append(make_message_file(tokens[i + j].start[0],
+                                                         tokens[i + j].start[1],
+                                                         'I0001',
+                                                         file_name))
                     if tokens[i + j].content == '(':
                         br += 1
                     elif tokens[i + j].content == ')':
@@ -144,7 +160,10 @@ def check_func_args_indent(tokens, i, indent):
                         if tokens[i + j].content == ')' and tokens[i + j].start[1] == col_start:
                             pass
                         else:
-                            print(make_full_message(tokens[i + j].start[0], tokens[i + j].start[1], 'I0001'))
+                            res.append(make_message_file(tokens[i + j].start[0],
+                                                         tokens[i + j].start[1],
+                                                         'I0001',
+                                                         file_name))
                 if tokens[i + j].content == ')':
                     br -= 1
                 elif tokens[i + j].content == '(':
@@ -160,7 +179,10 @@ def check_func_args_indent(tokens, i, indent):
                 while True:
                     if tokens[i + j - 1].content == '\n':
                         if tokens[i + j].start[1] != good_indent:
-                            print(make_full_message(tokens[i + j].start[0], tokens[i + j].start[1], 'I0001'))
+                            res.append(make_message_file(tokens[i + j].start[0],
+                                                         tokens[i + j].start[1],
+                                                         'I0001',
+                                                         file_name))
                     if tokens[i + j].content == '(':
                         br += 1
                     elif tokens[i + j].content == ')':
@@ -168,6 +190,7 @@ def check_func_args_indent(tokens, i, indent):
                     j += 1
                     if br == 0:
                         break
+    return res
 
 
 def find_line_start(tokens, i):
@@ -217,16 +240,27 @@ def one_space_between_name_and_operator(tokens, i):
     return ""
 
 
-def check_func_call_space(tokens, i, w):
-    if tokens[i].content in ['(', '['] and tokens[i - 1].token_type == "NAME" and tokens[i].start[0] == tokens[i - 1].start[0]:
+def check_func_call_space(tokens, i, w, file_name):
+    if tokens[i].content in ['(', '['] \
+            and tokens[i - 1].token_type == "NAME" \
+            and tokens[i].start[0] == tokens[i - 1].start[0]:
         if w == 'yes':
             if tokens[i].start[1] - tokens[i - 1].finish[1] > 1:
-                return make_full_message(tokens[i].start[0], tokens[i].start[1], 'A0003')
+                return make_message_file(tokens[i].start[0],
+                                         tokens[i].start[1],
+                                         'A0003',
+                                         file_name)
             if tokens[i].start[1] == tokens[i - 1].finish[1]:
-                return make_full_message(tokens[i].start[0], tokens[i].start[1], 'A0001')
+                return make_message_file(tokens[i].start[0],
+                                         tokens[i].start[1],
+                                         'A0001',
+                                         file_name)
         elif w == 'no':
             if tokens[i].start[1] != tokens[i - 1].finish[1]:
-                return make_full_message(tokens[i].start[0], tokens[i].start[1], 'A0002')
+                return make_message_file(tokens[i].start[0],
+                                         tokens[i].start[1],
+                                         'A0002',
+                                         file_name)
     return ""
 
 
@@ -286,6 +320,7 @@ def check_white_spaces(tokens, i):
     symbols = [':', ';', ',']
     pattern = re.compile(r'\[\s*\w*\s*:\s*\w*\s*(:\s*\w*\s*)?\]')
     match = pattern.search(tokens[i].all_string)
+
     if tokens[i].content == ':' and match:
         config = configparser.ConfigParser()
         config.read('config.ini')
@@ -340,16 +375,17 @@ def check_unnecessary_parentheses(tokens, i, file_name):
                 n += 1
 
 
-def check_multiple_importing(tokens, i):
-    if tokens[i].content == 'import' and 'from' not in tokens[i].all_string and tokens[i + 2].content == ',' and tokens[i + 3].token_type == "NAME":
-        line_number = tokens[i].start[0]
-        print(make_message_line(str(line_number), 'C0410'))
+def check_multiple_importing(tokens, i, file_name):
+    if tokens[i].content == 'import' and 'from' not in tokens[i].all_string \
+            and tokens[i + 2].content == ',' and tokens[i + 3].token_type == "NAME":
+        return make_message_file(tokens[i].start[0], tokens[i].start[1], 'C0410', file_name)
 
 
-def check_star_importing(tokens, i):
+def check_star_importing(tokens, i, file_name):
     if tokens[i].content == 'import' and 'from' in tokens[i].all_string:
         if tokens[i + 1].content == '*':
-            return make_full_message(tokens[i + 1].start[0], tokens[i + 1].start[1], 'A0007')
+            return make_message_file(tokens[i + 1].start[0],
+                                     tokens[i + 1].start[1], 'A0007', file_name)
     return ""
 
 
@@ -419,7 +455,7 @@ def check_type(tokens, i, t_type):
     return tokens[i].token_type == t_type
 
 
-def check_eq_spaces_in_func(tokens, i):
+def check_eq_spaces_in_func(tokens, i, file_name):
     in_func = False
     in_func_2 = False
     if tokens[i - 1].token_type != "NAME":
@@ -454,13 +490,19 @@ def check_eq_spaces_in_func(tokens, i):
 
     if in_func:
         if tokens[i].start[1] - tokens[i - 1].finish[1] > 0 and tokens[i + 1].start[1] - tokens[i].finish[1] > 0:
-            return make_full_message(tokens[i].start[0], tokens[i].start[1], 'C0327')
+            return make_message_file(tokens[i].start[0],
+                                     tokens[i].start[1],
+                                     'C0327',
+                                     file_name)
         else:
             return ""
 
     if in_func_2:
         if tokens[i].start[1] - tokens[i - 1].finish[1] != 1 and tokens[i + 1].start[1] - tokens[i].finish[1] != 1:
-            return make_full_message(tokens[i].start[0], tokens[i].start[1], 'C0327')
+            return make_message_file(tokens[i].start[0],
+                                     tokens[i].start[1],
+                                     'C0327',
+                                     file_name)
         else:
             return ""
 
