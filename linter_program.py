@@ -254,7 +254,11 @@ if __name__ == "__main__":
         try:
             for file in files:
                 if os.path.isdir(file):
-                    print("this is a directory")
+                    for root, dirs, files in os.walk(file):
+                        for file1 in files:
+                            if file1.endswith(".py") and file1 != '__init__.py':
+                                my_file = os.path.join(root, file1)
+                                main(conf_file, my_file)
                 else:
                     main(conf_file, file)
         except FileNotFoundError:
