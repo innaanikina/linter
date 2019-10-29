@@ -5,7 +5,7 @@ from chekers import check_multiple_importing, check_white_spaces, \
     check_list_args_indent, line_break_bin_op, check_star_importing, check_single_comments_pep8, \
     find_last_module_element, count_dedents, check_correct_module, check_multi_comments_pep8, check_is_multi_comment, \
     check_multi_com_indent, check_eq_spaces_in_func, check_is_name_valid, is_snake_case, is_camel_case, is_upper_camel, \
-    check_func_spaces_1, line_is_long_1
+    check_func_spaces_1, line_is_long_1, check_classes_spaces_before
 import configparser
 from tokenizer import Tokenizer
 from make_tokens import is_function, tokenize_file, read_file, is_func_decl, is_class_decl, get_class_start, is_end
@@ -188,7 +188,7 @@ def main(conf_file, file):
             if is_class_decl(tokens, i):
                 check_print(is_snake_case(tokens, i, file))
 
-        if config['SPACES']['SpacesBetwFuncsInClass'] != 'no':
+        if config['SPACES']['SpacesBetwFuncsInClass'] != 'no':  # DONE
             spaces = int(config['SPACES']['SpacesBetwFuncsInClass'])
             if not class_started and get_class_start(tokens, i) != (-1, -1):
                 class_started = True
@@ -199,10 +199,14 @@ def main(conf_file, file):
             if class_started and tokens[i].content == 'def':
                 check_print(check_func_spaces_1(tokens, i, spaces, file))
 
-        if config['SPACES']['SpacesBetwFuncNotInClass'] != 'no':
+        if config['SPACES']['SpacesBetwFuncNotInClass'] != 'no':  # DONE
             ext_spaces = int(config['SPACES']['SpacesBetwFuncNotInClass'])
             if not class_started and tokens[i].content == 'def':
                 check_print(check_func_spaces_1(tokens, i, ext_spaces, file))
+
+        if config['SPACES']['SpacesBetwClasses'] != 'no':  # only before is done
+            cl_spaces = int(config['SPACES']['SpacesBetwClasses'])
+            check_print(check_classes_spaces_before(tokens, i, cl_spaces, file))
 
     if config['DEFAULT']['EndLine'] == 'yes':  # DONE
         blank_line_in_the_end(tokens)

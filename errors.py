@@ -28,4 +28,5 @@ error_messages = {"C0301": "Line is too long.",
                   "N0003": "Name should be in snake-case",
                   "N0004": "Name should be in camel-case",
                   "N0005": "Name should be in upper camel-case",
-                  "L0001": "Wrong amount of empty lines before the function declaration"}
+                  "L0001": "Wrong amount of empty lines before the function declaration",
+                  "L0002": "Wrong amoung of empty lines between class declarations"}

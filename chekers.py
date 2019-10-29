@@ -557,7 +557,7 @@ def is_upper_camel(tokens, i, file_name):
 
 
 def check_func_spaces_1(tokens, i, lines, file_name):
-    if tokens[i - 2].content == ':':
+    if tokens[i - 2].content == ':' or tokens[i - 1].token_type == "ENC":
         return ""
     j = 1
     flag = False
@@ -570,12 +570,40 @@ def check_func_spaces_1(tokens, i, lines, file_name):
             elif j == 3 and tokens[i - j].content == ':':
                 flag = True
                 break
-            elif tokens[i - j].token_type == "INDENT" or tokens[i - j].token_type == "DEDENT":
+            elif tokens[i - j].token_type == "INDENT" \
+                    or tokens[i - j].token_type == "DEDENT":
                 j += 1
             else:
                 break
     except IndexError:
         pass
     if not flag and nls - 1 != lines:
-        return make_message_file(tokens[i].start[0], tokens[i].start[1], 'L0001', file_name)
+        return make_message_file(tokens[i].start[0],
+                                 tokens[i].start[1],
+                                 'L0001',
+                                 file_name)
     return ""
+
+
+def check_classes_spaces_before(tokens, i, lines, file_name):
+    if tokens[i].content == 'class' and tokens[i].start[0] != 1:
+        j = 1
+        nls = 0
+        try:
+            while True:
+                if tokens[i - j].content == '\n':
+                    j += 1
+                    nls += 1
+                elif tokens[i - j].token_type == "INDENT" \
+                        or tokens[i - j].token_type == "DEDENT":
+                    j += 1
+                else:
+                    break
+        except IndexError:
+            pass
+        if nls - 1 != lines:
+            return make_message_file(tokens[i].start[0],
+                                     tokens[i].start[1],
+                                     'L0002',
+                                     file_name)
+        return ""
