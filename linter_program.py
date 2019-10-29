@@ -3,13 +3,13 @@ from checkers import check_multiple_importing, check_white_spaces, \
     check_trailing_semicolon, blank_line_in_the_end, line_is_long, check_encoding, docstr_line_is_long, \
     check_func_call_space, one_space_between_name_and_operator, check_trailing_space, check_func_args_indent, \
     check_list_args_indent, line_break_bin_op, check_star_importing, check_single_comments_pep8, \
-    find_last_module_element, count_dedents, check_correct_module, check_multi_comments_pep8, check_is_multi_comment, \
+    find_last_module_element, count_dedents, check_multi_comments_pep8, check_is_multi_comment, \
     check_multi_com_indent, check_eq_spaces_in_func, check_is_name_valid, is_snake_case, is_camel_case, is_upper_camel, \
     check_func_spaces_1, check_classes_spaces_before, check_classes_spaces_after
 import configparser
 from tokenizer import Tokenizer
 from make_tokens import is_function, is_func_decl, is_class_decl, get_class_start, is_end
-from message import make_message_file
+from message import make_mes
 import sys
 import os
 
@@ -52,8 +52,6 @@ def main(conf_file, file):
     Tokenizer.write_to_file(tokens, 'test.txt')
 
     for i in range(len(tokens)):
-        if i == 613:
-            print("")
         if tokens[i].content == '=' and config['DEFAULT']['FuncArgEqNoSpace'] == 'yes':
             out = check_eq_spaces_in_func(tokens, i, file)
             if out != "" and out != "no":
@@ -146,8 +144,8 @@ def main(conf_file, file):
                     lines = e.start[0] - module_content[mod_lvl][0] + 1
                     length = int(config['OPTIONAL']['MaxModuleLines'])
                     if lines > length:
-                        print(make_message_file(e.finish[0],
-                                                e.finish[1],
+                        print(make_mes(e.finish[0],
+                                       e.finish[1],
                                                 'L0003', file)
                               + ' ' + module_content[mod_lvl][2])
                     mod_lvl -= 1
@@ -162,15 +160,15 @@ def main(conf_file, file):
                     lines = e.start[0] - module_content[mod_lvl][0] + 1
                     length = int(config['OPTIONAL']['MaxModuleLines'])
                     if lines > length:
-                        print(make_message_file(e.finish[0],
-                                                e.finish[1],
+                        print(make_mes(e.finish[0],
+                                       e.finish[1],
                                                 'L0003',
-                                                file)
+                                       file)
                               + ' ' + module_content[mod_lvl][2])
                     mod_lvl -= 1
                     module_content.pop()
 
-            if tokens[i].content in modules and check_correct_module(tokens, i):
+            if tokens[i].content in modules:
                 mod_lvl += 1
                 module_content.append([])
                 module_content[mod_lvl].append(tokens[i].start[0])

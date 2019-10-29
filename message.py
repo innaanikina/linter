@@ -15,7 +15,7 @@ def make_full_message(line_number, element_number, error_number):
            + ' ' + error_number + ' ' + error_messages[error_number]
 
 
-def make_message_file(line_number, element_number, error_number, file_name):
+def make_mes(line_number, element_number, error_number, file_name):
     return file_name + ':'\
            + str(line_number) + ':' \
            + str(element_number) + ': ' \

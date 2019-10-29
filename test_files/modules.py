@@ -31,3 +31,20 @@ class MyClass:
     def func2(self):
         pass
 
+
+condition1 = True
+condition2 = False
+condition3 = True
+condition4 = False
+
+if condition1 == condition2 \
+        and condition3 == condition4:
+    print("do something")
+    for i in range(2):
+        print()
+        print()
+        print()
+        print()
+        print()
+
+print()

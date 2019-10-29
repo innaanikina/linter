@@ -14,6 +14,7 @@ def long_function_name(
         var_four):
     print(var_one)
 
+
 # Hanging indents should add a level.
 foo = long_function_name(
     var_one, var_two,
@@ -25,11 +26,13 @@ foo = long_function_name(
 foo = long_function_name(var_one, var_two,
     var_three, var_four)
 
+
 # Further indentation required as indentation is not distinguishable.
 def long_function_name(
     var_one, var_two, var_three,
     var_four):
     print(var_one)
+
 
 def long_function_name1(
     var_one, var_two, var_three,
@@ -41,3 +44,11 @@ def long_function_name1(
 foo = long_function_name(
   var_one, var_two,
   var_three, var_four)
+
+
+res = []
+
+
+def func0(var1, var2, var3, var4):
+    return var1 + var2 + var3 + var4
+
