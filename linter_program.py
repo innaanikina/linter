@@ -162,7 +162,7 @@ def main(conf_file, file):
                     if lines > length:
                         print(make_mes(e.finish[0],
                                        e.finish[1],
-                                                'L0003',
+                                       'L0003',
                                        file)
                               + ' ' + module_content[mod_lvl][2])
                     mod_lvl -= 1

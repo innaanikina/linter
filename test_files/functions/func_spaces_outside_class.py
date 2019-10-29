@@ -8,6 +8,8 @@ def func1():
 def func2():
     pass
 
+h = "Hello there"
+
 
 
 
