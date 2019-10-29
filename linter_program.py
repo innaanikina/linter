@@ -5,11 +5,12 @@ from chekers import check_multiple_importing, check_white_spaces, \
     check_list_args_indent, line_break_bin_op, check_star_importing, check_single_comments_pep8, \
     find_last_module_element, count_dedents, check_correct_module, check_multi_comments_pep8, check_is_multi_comment, \
     check_multi_com_indent, check_eq_spaces_in_func, check_is_name_valid, is_snake_case, is_camel_case, is_upper_camel, \
-    check_func_spaces_1, line_is_long_1, check_classes_spaces_before
+    check_func_spaces_1, line_is_long_1, check_classes_spaces_before, check_classes_spaces_after
 import configparser
 from tokenizer import Tokenizer
 from make_tokens import is_function, tokenize_file, read_file, is_func_decl, is_class_decl, get_class_start, is_end
 import sys
+import os
 
 
 def check_tokens(tokens):
@@ -37,6 +38,8 @@ def main(conf_file, file):
     class_started = False
     class_start = (-1, -1)
 
+    end = False
+
     config = configparser.ConfigParser()
     config.read(conf_file)
     encoding = config['DEFAULT']['Encoding']
@@ -44,6 +47,8 @@ def main(conf_file, file):
 
     if encoding != '':
         check_encoding(file, encoding)
+
+    Tokenizer.write_to_file(tokens, 'test.txt')
 
     for i in range(len(tokens)):
         if tokens[i].content == '=' and config['DEFAULT']['FuncArgEqNoSpace'] == 'yes':  # DONE
@@ -194,6 +199,7 @@ def main(conf_file, file):
                 class_started = True
                 class_start = get_class_start(tokens, i)
             elif class_started and is_end(tokens, i, class_start):
+                end = True
                 class_started = False
 
             if class_started and tokens[i].content == 'def':
@@ -204,9 +210,13 @@ def main(conf_file, file):
             if not class_started and tokens[i].content == 'def':
                 check_print(check_func_spaces_1(tokens, i, ext_spaces, file))
 
-        if config['SPACES']['SpacesBetwClasses'] != 'no':  # only before is done
+        if config['SPACES']['SpacesBetwClasses'] != 'no':  # DONE
             cl_spaces = int(config['SPACES']['SpacesBetwClasses'])
             check_print(check_classes_spaces_before(tokens, i, cl_spaces, file))
+            if end and not tokens[i].token_type == 'EOF':
+                check_print(check_classes_spaces_after(tokens, i, cl_spaces, file))
+                if not tokens[i].token_type == 'DEDENT':
+                    end = False
 
     if config['DEFAULT']['EndLine'] == 'yes':  # DONE
         blank_line_in_the_end(tokens)
@@ -228,7 +238,10 @@ if __name__ == "__main__":
             files.append(sys.argv[e])
         try:
             for file in files:
-                main(conf_file, file)
+                if os.path.isdir(file):
+                    print("this is a directory")
+                else:
+                    main(conf_file, file)
         except FileNotFoundError:
             print('Ошибка! Файл не найден: ' + file)
         except PermissionError:

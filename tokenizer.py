@@ -10,11 +10,21 @@ class Tokenizer(object):
         self.finish = finish
         self.all_string = all_string
 
+    def __str__(self):
+        token_content = ''
+        if self.content == '\n':
+            token_content = '\\n'
+        return self.token_type \
+               + ' ' + token_content \
+               + ' ' + str(self.start) \
+               + ' ' + str(self.finish) \
+               + ' \"' + self.all_string[:-1] + '\"'
+
     @staticmethod
     def write_to_file(result, file_name):
         f = open(file_name, 'w')
-        for res1 in result:
-            f.write(str(res1) + '\n')
+        for i in range(len(result)):
+            f.write(str(i) + ' ' + str(result[i]) + '\n')
         f.close()
 
     @staticmethod

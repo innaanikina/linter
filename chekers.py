@@ -243,6 +243,10 @@ def one_space_between_name_and_operator(tokens, i, file_name):
 
 
 def check_func_call_space(tokens, i, w, file_name):
+    keywords = ['assert', 'del', 'elif', 'except', 'for', 'in',
+                'if', 'not', 'raise', 'return', 'while', 'yield']
+    if tokens[i - 1].content in keywords:
+        return ""
     if tokens[i].content in ['(', '['] \
             and tokens[i - 1].token_type == "NAME" \
             and tokens[i].start[0] == tokens[i - 1].start[0]:
@@ -607,3 +611,32 @@ def check_classes_spaces_before(tokens, i, lines, file_name):
                                      'L0002',
                                      file_name)
         return ""
+
+
+def check_classes_spaces_after(tokens, i, lines, file_name):
+    if tokens[i].content != 'class' and tokens[i].token_type != 'DEDENT':
+        nls = count_new_lines(tokens, i)
+        if nls - 1 != lines:
+            return make_message_file(tokens[i].start[0],
+                                     tokens[i].start[1],
+                                     'L0002',
+                                     file_name)
+    return ""
+
+
+def count_new_lines(tokens, i):
+    j = 1
+    nls = 0
+    try:
+        while True:
+            if tokens[i - j].content == '\n':
+                j += 1
+                nls += 1
+            elif tokens[i - j].token_type == "INDENT" \
+                    or tokens[i - j].token_type == "DEDENT":
+                j += 1
+            else:
+                break
+    except IndexError:
+        pass
+    return nls

@@ -1,4 +1,19 @@
 class Class1:
+    def func0(self):
+        pass
+
+    def func1(self):
+        pass
+
+    def func2(self):
+        pass
+
+
+def func123():
+    pass
+
+
+class Class123:
     pass
 
 class Class2:
