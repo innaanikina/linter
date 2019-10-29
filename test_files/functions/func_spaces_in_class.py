@@ -16,3 +16,16 @@ class MyClass:
         pass
     def func4(self):
         pass
+
+    @staticmethod
+    def static_func():
+        return ""
+    @staticmethod
+    def func5():
+        return ""
+
+
+
+    @staticmethod
+    def func6():
+        return""

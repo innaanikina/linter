@@ -46,7 +46,9 @@ def get_encoding(file_name):
 
 def is_function(tokens, i):
     j = 2
-    if tokens[i].token_type == "NAME" and tokens[i + 1].content == "(":
+    if tokens[i].token_type == "NAME" \
+            and tokens[i + 1].content == "(" \
+            and tokens[i].content != 'if':
         while True:
             try:
                 if tokens[i + j].content == ')':
@@ -81,8 +83,8 @@ def get_class_start(tokens, i):
         if tokens[i - 1].content == "class" and tokens[i].token_type == "NAME":
             return tokens[i - 1].start
     except IndexError:
-        return (-1, -1)
-    return (-1, -1)
+        return -1, -1
+    return -1, -1
 
 
 def is_end(tokens, i, start):

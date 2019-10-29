@@ -1,5 +1,7 @@
 # slicing
 
+ham = "fksherfjgvfs;klrgjhs;"
+
 ham[1:9], ham[1:9:3], ham[:9:3], ham[1::3], ham[1:9:]
 ham[lower:upper], ham[lower:upper:], ham[lower::step]
 ham[lower+offset : upper+offset]
@@ -37,5 +39,5 @@ y1 = 2
 x1 == y1
 x1==y1
 x1 is not y1
-a = x1 is      not y1
+a =           x1          is      not y1
 

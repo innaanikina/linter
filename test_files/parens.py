@@ -19,6 +19,13 @@ elif(3 == 4):
 else:
     print("This is what's gonna happen")
 
+if (this_is_one_thing and
+    that_is_another_thing):
+    do_something()
+
+if (this_is_one_thing or that_is) and that_is_another_thing:
+    do_something()
+
 try:
     print()
 except (IndexError):
@@ -26,4 +33,13 @@ except (IndexError):
 
 while (True):
     break
+
+for enc in encoding:
+    try:
+        open(file_name, encoding=enc).read()
+    except (UnicodeDecodeError, LookupError):
+        pass
+    else:
+        correct_encoding = enc
+        break
 

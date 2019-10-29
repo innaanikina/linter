@@ -11,9 +11,10 @@ class Tokenizer(object):
         self.all_string = all_string
 
     def __str__(self):
-        token_content = ''
         if self.content == '\n':
             token_content = '\\n'
+        else:
+            token_content = self.content
         return self.token_type \
                + ' ' + token_content \
                + ' ' + str(self.start) \
@@ -67,7 +68,7 @@ class Tokenizer(object):
 
         result = []
         enc = get_encoding(file_name)
-        Tokenizer.add_to_result(result, 0, "ENC", enc, (0, 0), (0, 0), "")
+        Tokenizer.add_to_res(result, 0, "ENC", enc, (0, 0), (0, 0), "")
         words_counter = len(result)
 
         for i in range(len(s)):
@@ -85,8 +86,13 @@ class Tokenizer(object):
                     q = real_ind_depth - indent_depth
                     start = col - q * indent
                     for x1 in range(0, q):
-                        Tokenizer.add_to_result(result, words_counter, "INDENT", "", (line, start),
-                                                (line, start + indent), "default")
+                        Tokenizer.add_to_res(result,
+                                             words_counter,
+                                             "INDENT",
+                                             "",
+                                             (line, start),
+                                             (line, start + indent),
+                                             "default")
                         words_counter += 1
                     indent_depth = col // indent
                     f_ind = False
@@ -95,8 +101,13 @@ class Tokenizer(object):
                     q = real_ind_depth - indent_depth
                     start = col - q * indent
                     for x in range(q):
-                        Tokenizer.add_to_result(result, words_counter, "INDENT", " " * indent, (line, start),
-                                                (line, start + indent), "default")
+                        Tokenizer.add_to_res(result,
+                                             words_counter,
+                                             "INDENT",
+                                             " " * indent,
+                                             (line, start),
+                                             (line, start + indent),
+                                             "default")
                         words_counter += 1
                         start += indent
                     indent_is_on = True
@@ -104,20 +115,25 @@ class Tokenizer(object):
                 elif real_ind_depth < indent_depth:
                     q = indent_depth - real_ind_depth
                     for x in range(q):
-                        Tokenizer.add_to_result(result, words_counter, "DEDENT", "",
-                                                (line, col), (line, col), "default")
+                        Tokenizer.add_to_res(result, words_counter, "DEDENT", "",
+                                             (line, col), (line, col), "default")
                         words_counter += 1
                     indent_depth = col // indent
                 counting_spaces = False
                 spaces = 0
             elif col == 0 and s[i] != " " and indent_is_on and s[i] != '\n' and s[i] != '#':
                 for q in range(indent_depth):
-                    Tokenizer.add_to_result(result, words_counter, "DEDENT", "", (line, col), (line, col), "default")
+                    Tokenizer.add_to_res(result,
+                                         words_counter,
+                                         "DEDENT",
+                                         "",
+                                         (line, col),
+                                         (line, col),
+                                         "default")
                     words_counter += 1
                 indent_depth = col // indent
                 indent_is_on = False
-            elif spaces > 0 and s[i] != " " and spaces % indent == 0 and s[i] != '\n' \
-                    and s[i] == '#' and result[words_counter - 2][1] == ':':
+            elif spaces > 0 and s[i] != " " and spaces % indent == 0 and s[i] != '\n' and s[i] == '#' and result[words_counter - 2][1] == ':':
                 f_ind = True
                 spaces = 0
                 counting_spaces = False
@@ -138,18 +154,22 @@ class Tokenizer(object):
 
             elif word_list and word_list[0] in quotes:
                 word_list.append(s[i])
-                l = len(word_list)
-                if l == 2 and word_list and word_list[0] in quotes and s[i] in quotes and s[i + 1] in quotes:
+                ln = len(word_list)
+                if ln == 2 and word_list and word_list[0] in quotes and s[i] in quotes and s[i + 1] in quotes:
                     com_started = True
                     line_num = line
                     col_num = col - 1
 
-                if com_started and word_list[l - 3] in quotes \
-                        and word_list[l - 2] in quotes and s[i] in quotes and l > 3:
+                if com_started and word_list[ln - 3] in quotes and word_list[ln - 2] in quotes and s[i] in quotes and ln > 3:
                     current_word = "".join(word_list)
                     word_list.clear()
-                    Tokenizer.add_to_result(result, words_counter, "STRING", current_word, (line_num, col_num),
-                                            (line, col + 1), "default")  # COM
+                    Tokenizer.add_to_res(result,
+                                         words_counter,
+                                         "STRING",
+                                         current_word,
+                                         (line_num, col_num),
+                                         (line, col + 1),
+                                         "default")  # COM
                     words_counter = len(result)
                     com_started = False
                 elif s[i] == word_list[0] and not com_started and s[i + 1] == s[i]:
@@ -157,8 +177,14 @@ class Tokenizer(object):
                 elif s[i] == word_list[0] and not com_started:
                     current_word = "".join(word_list)
                     word_list.clear()
-                    Tokenizer.add_to_result(result, words_counter, "STRING", current_word,
-                                            (line, col + 1 - len(current_word)), (line, col + 1), "default")
+                    new_s_col = col + 1 - len(current_word)
+                    Tokenizer.add_to_res(result,
+                                         words_counter,
+                                         "STRING",
+                                         current_word,
+                                         (line, new_s_col),
+                                         (line, col + 1),
+                                         "default")
                     words_counter = len(result)
 
             elif s[i] in operators:
@@ -171,11 +197,22 @@ class Tokenizer(object):
                         w_type = "NUMBER"
                     else:
                         w_type = "NAME"
-                    Tokenizer.add_to_result(result, words_counter, w_type, current_word,
-                                            (line, col - len(current_word)), (line, col), "default")
+                    Tokenizer.add_to_res(result,
+                                         words_counter,
+                                         w_type,
+                                         current_word,
+                                         (line, col - len(current_word)),
+                                         (line, col),
+                                         "default")
                     words_counter = len(result)
                 if s[i] in operators1:
-                    Tokenizer.add_to_result(result, words_counter, "OP", s[i], (line, col), (line, col + 1), "default")
+                    Tokenizer.add_to_res(result,
+                                         words_counter,
+                                         "OP",
+                                         s[i],
+                                         (line, col),
+                                         (line, col + 1),
+                                         "default")
                     words_counter += 1
                 elif s[i] == '!' and not operator_is_started:
                     operator_is_started = True
@@ -187,8 +224,13 @@ class Tokenizer(object):
                     op_list.append(s[i])
                     current_word = "".join(op_list)
                     op_list.clear()
-                    Tokenizer.add_to_result(result, words_counter, "OP", current_word, (line, col - 1),
-                                            (line, col + 1), "default")
+                    Tokenizer.add_to_res(result,
+                                         words_counter,
+                                         "OP",
+                                         current_word,
+                                         (line, col - 1),
+                                         (line, col + 1),
+                                         "default")
                     words_counter += 1
                     operator_is_started = False
 
@@ -196,8 +238,13 @@ class Tokenizer(object):
                     op_list.append(s[i])
                     current_word = "".join(op_list)
                     op_list.clear()
-                    Tokenizer.add_to_result(result, words_counter, "OP", current_word,
-                                            (line, col - 1), (line, col + 1), "default")
+                    Tokenizer.add_to_res(result,
+                                         words_counter,
+                                         "OP",
+                                         current_word,
+                                         (line, col - 1),
+                                         (line, col + 1),
+                                         "default")
                     words_counter += 1
                     operator_is_started = False
 
@@ -208,8 +255,13 @@ class Tokenizer(object):
                     op_list.append(s[i])
                     current_word = "".join(op_list)
                     op_list.clear()
-                    Tokenizer.add_to_result(result, words_counter, "OP", current_word, (line, col - 2),
-                                            (line, col + 1), "default")
+                    Tokenizer.add_to_res(result,
+                                         words_counter,
+                                         "OP",
+                                         current_word,
+                                         (line, col - 2),
+                                         (line, col + 1),
+                                         "default")
                     words_counter += 1
                     operator_is_started = False
 
@@ -217,8 +269,13 @@ class Tokenizer(object):
                     op_list.append(s[i])
                     current_word = "".join(op_list)
                     op_list.clear()
-                    Tokenizer.add_to_result(result, words_counter, "OP", current_word, (line, col - 1), (line, col + 1),
-                                            "default")
+                    Tokenizer.add_to_res(result,
+                                         words_counter,
+                                         "OP",
+                                         current_word,
+                                         (line, col - 1),
+                                         (line, col + 1),
+                                         "default")
                     words_counter += 1
                     operator_is_started = False
 
@@ -226,16 +283,27 @@ class Tokenizer(object):
                 if op_list and operator_is_started:
                     current_word = "".join(op_list)
                     op_list.clear()
-                    Tokenizer.add_to_result(result, words_counter, "OP", current_word, (line, col - len(current_word)),
-                                            (line, col), "default")
+                    new_col = col - len(current_word)
+                    Tokenizer.add_to_res(result,
+                                         words_counter,
+                                         "OP",
+                                         current_word,
+                                         (line, new_col),
+                                         (line, col), "default")
                     words_counter += 1
                     operator_is_started = False
                 elif word_list:
                     if word_list[0] == '#':
                         current_word = "".join(word_list)
                         word_list.clear()
-                        Tokenizer.add_to_result(result, words_counter, "COMMENT", current_word, (line_num, col_num),
-                                                (line_num, col_num + len(current_word)), "default")
+                        new_col = col_num + len(current_word)
+                        Tokenizer.add_to_res(result,
+                                             words_counter,
+                                             "COMMENT",
+                                             current_word,
+                                             (line_num, col_num),
+                                             (line_num, new_col),
+                                             "default")
                         words_counter += 1
                     else:
                         current_word = "".join(word_list)
@@ -246,16 +314,26 @@ class Tokenizer(object):
                             w_type = "NUMBER"
                         else:
                             w_type = "NAME"
-                        Tokenizer.add_to_result(result, words_counter, w_type, current_word,
-                                                (line, col - len(current_word)), (line, col), "default")
+                        Tokenizer.add_to_res(result,
+                                             words_counter,
+                                             w_type,
+                                             current_word,
+                                             (line, col - len(current_word)),
+                                             (line, col),
+                                             "default")
                         words_counter = len(result)
                 if s[i] == '\n':
                     w_type = 'NL'
                 else:
                     w_type = 'OP'
                 if s[i] == '\n' and not ignore or s[i] != '\n':
-                    Tokenizer.add_to_result(result, words_counter, w_type, s[i],
-                                            (line, col), (line, col + 1), "default")
+                    Tokenizer.add_to_res(result,
+                                         words_counter,
+                                         w_type,
+                                         s[i],
+                                         (line, col),
+                                         (line, col + 1),
+                                         "default")
                     words_counter += 1
 
                 if s[i] == '\n':
@@ -275,8 +353,13 @@ class Tokenizer(object):
                 if op_list and operator_is_started:
                     current_word = "".join(op_list)
                     op_list.clear()
-                    Tokenizer.add_to_result(result, words_counter, "OP", current_word, (line, col - len(current_word)),
-                                            (line, col), "default")
+                    Tokenizer.add_to_res(result,
+                                         words_counter,
+                                         "OP",
+                                         current_word,
+                                         (line, col - len(current_word)),
+                                         (line, col),
+                                         "default")
                     words_counter += 1
                     operator_is_started = False
                 elif s[i] == '\\':
@@ -289,8 +372,13 @@ class Tokenizer(object):
                 if op_list and operator_is_started:
                     current_word = "".join(op_list)
                     op_list.clear()
-                    Tokenizer.add_to_result(result, words_counter, "OP", current_word, (line, col - len(current_word)),
-                                  (line, col), "default")
+                    Tokenizer.add_to_res(result,
+                                         words_counter,
+                                         "OP",
+                                         current_word,
+                                         (line, col - len(current_word)),
+                                         (line, col),
+                                         "default")
                     words_counter += 1
                     operator_is_started = False
 
@@ -302,8 +390,13 @@ class Tokenizer(object):
                         w_type = "NUMBER"
                     else:
                         w_type = "NAME"
-                    Tokenizer.add_to_result(result, words_counter, w_type, current_word,
-                                            (line, col - len(current_word)), (line, col), "default")
+                    Tokenizer.add_to_res(result,
+                                         words_counter,
+                                         w_type,
+                                         current_word,
+                                         (line, col - len(current_word)),
+                                         (line, col),
+                                         "default")
                     words_counter = len(result)
                     word_list.clear()
 
@@ -323,7 +416,13 @@ class Tokenizer(object):
                     result[z][4] = cur_line
             col += 1
 
-        Tokenizer.add_to_result(result, words_counter, "EOF", "", (line, 0), (line, 0), "")
+        Tokenizer.add_to_res(result,
+                             words_counter,
+                             "EOF",
+                             "",
+                             (line, 0),
+                             (line, 0),
+                             "")
         return result
 
     @staticmethod
@@ -362,7 +461,7 @@ class Tokenizer(object):
                 return False
 
     @staticmethod
-    def add_to_result(res, i, val_1, val_2, val_3, val_4, val_5):
+    def add_to_res(res, i, val_1, val_2, val_3, val_4, val_5):
         res.append([])
         for v in range(5):
             res[i].append("default")

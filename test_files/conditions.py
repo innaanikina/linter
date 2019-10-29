@@ -1,4 +1,5 @@
 # INDENTATION
+# all these are correct
 # No extra indentation.
 if (this_is_one_thing and
     that_is_another_thing):
@@ -6,8 +7,8 @@ if (this_is_one_thing and
 
 # Add a comment, which will provide some distinction in editors
 # supporting syntax highlighting.
-if  this_is_one_thing and
-    that_is_another_thing:
+if (this_is_one_thing and
+    that_is_another_thing):
     # Since both conditions are true, we can frobnicate.
     do_something()
 

@@ -233,10 +233,12 @@ def check_trailing_space(tokens, i, file_name):
 
 
 def one_space_between_name_and_operator(tokens, i, file_name):
-    keywords = ['assert', 'del', 'elif', 'except', 'for', 'in',
+    keywords = ['assert', 'del', 'elif', 'except', 'for', 'in', 'is',
                 'if', 'not', 'raise', 'return', 'while', 'yield']
     if tokens[i].token_type == "OP" and tokens[i - 1].token_type == "NAME" \
-            and tokens[i - 1].token_type not in keywords and tokens[i].content != '(':
+            and tokens[i - 1].token_type not in keywords \
+            and tokens[i].content != '(' \
+            and tokens[i].content not in keywords:
         if tokens[i].start[1] - tokens[i - 1].finish[1] > 1:
             return make_message_file(tokens[i].start[0], tokens[i].start[1], 'A0004', file_name)
     return ""
@@ -245,8 +247,6 @@ def one_space_between_name_and_operator(tokens, i, file_name):
 def check_func_call_space(tokens, i, w, file_name):
     keywords = ['assert', 'del', 'elif', 'except', 'for', 'in',
                 'if', 'not', 'raise', 'return', 'while', 'yield']
-    if tokens[i - 1].content in keywords:
-        return ""
     if tokens[i].content in ['(', '['] \
             and tokens[i - 1].token_type == "NAME" \
             and tokens[i].start[0] == tokens[i - 1].start[0]:
@@ -262,7 +262,10 @@ def check_func_call_space(tokens, i, w, file_name):
                                          'A0001',
                                          file_name)
         elif w == 'no':
-            if tokens[i].start[1] != tokens[i - 1].finish[1]:
+            space = 0
+            if tokens[i - 1].content in keywords:
+                space = 1
+            if tokens[i].start[1] - tokens[i - 1].finish[1] != space:
                 return make_message_file(tokens[i].start[0],
                                          tokens[i].start[1],
                                          'A0002',
@@ -270,22 +273,22 @@ def check_func_call_space(tokens, i, w, file_name):
     return ""
 
 
-def ext_slice_colon_spaces(token, w):
+def ext_slice_colon_spaces(token, w, file_name):
     if w == 'yes':
         if re.search(r'\[\s*\w*\s*:\s*\w*\s*\]', token.all_string) \
                 and not re.search(r'\[\s*\w*\s:\s\w*\s*\]', token.all_string):
-            return make_full_message(token.start[0], token.start[1], 'A0000')
+            return make_message_file(token.start[0], token.start[1], 'A0000', file_name)
         elif re.search(r'\[\s*\w*\s*:\s*\w*\s*:\s*\w*\s*\]', token.all_string) \
                 and not re.search(r'\[\s*\w*\s:\s\w*\s:\s\w*\s*\]', token.all_string):
-            return make_full_message(token.start[0], token.start[1], 'A0000')
+            return make_message_file(token.start[0], token.start[1], 'A0000', file_name)
 
     elif w == 'no':
         if re.search(r'\[\s*\w*\s*:\s*\w*\s*\]', token.all_string) \
                 and not re.search(r'\[\s*\w*:\w*\s*\]', token.all_string):
-            return make_full_message(token.start[0], token.start[1], 'A0000')
+            return make_message_file(token.start[0], token.start[1], 'A0000', file_name)
         elif re.search(r'\[\s*\w*\s*:\s*\w*\s*:\s*\w*\s*]', token.all_string) \
                 and not re.search(r'\[\s*\w*:\w*:\w*\s*]', token.all_string):
-            return make_full_message(token.start[0], token.start[1], 'A0000')
+            return make_message_file(token.start[0], token.start[1], 'A0000', file_name)
 
     return ""
 
@@ -297,21 +300,20 @@ def line_is_long(token, length, file_name):
         return ""
 
 
-def line_is_long_1(token, length, file_name):
-    if token.start[1] > length or token.finish[1] > length:
-        return make_message_file(token.finish[0], token.finish[1], 'C0301', file_name)
-    else:
-        return ""
-
-
 def docstr_line_is_long(token, length, file_name):
     start_col = token.start[1]
     lines = token.content.split('\n')
     if start_col + len(lines[0]) > length:
-        return make_message_file(token.start[0], start_col + len(lines[0]), 'C0301', file_name)
+        return make_message_file(token.start[0],
+                                 start_col + len(lines[0]),
+                                 'C0301',
+                                 file_name)
     for i in range(1, len(lines)):
         if len(lines[i]) > length:
-            return make_message_file(token.start[0] + i, len(lines[i]), 'C0301', file_name)
+            return make_message_file(token.start[0] + i,
+                                     len(lines[i]),
+                                     'C0301',
+                                     file_name)
     return ""
 
 
@@ -322,7 +324,8 @@ def blank_line_in_the_end(tokens):
         print(make_full_message(line_number, element_number, 'C0304'))
 
 
-def check_white_spaces(tokens, i):
+def check_white_spaces(tokens, i, file_name):
+    res = []
     symbols = [':', ';', ',']
     pattern = re.compile(r'\[\s*\w*\s*:\s*\w*\s*(:\s*\w*\s*)?\]')
     match = pattern.search(tokens[i].all_string)
@@ -331,23 +334,25 @@ def check_white_spaces(tokens, i):
         config = configparser.ConfigParser()
         config.read('config.ini')
         w = config['OPTIONAL']['ExtSliceColonSpaces']
-        out = ext_slice_colon_spaces(tokens[i], w)
+        out = ext_slice_colon_spaces(tokens[i], w, file_name)
         if out:
-            print(out)
+            res.append(out)
 
     elif tokens[i].content in symbols:
         if ' ' + tokens[i].content in tokens[i].all_string:
-            line_number = str(tokens[i].start[0])
-            element_number = str(tokens[i].start[1] - 1)
-            print(make_full_message(line_number, element_number, 'C0326'))
+            res.append(make_message_file(tokens[i].start[0],
+                                         tokens[i].start[1] - 1,
+                                         'C0326',
+                                         file_name))
 
     closing_braces = ['}', ')', ']']
     opening_braces = ['{', '(', '[']
     if tokens[i].content in opening_braces:
         if tokens[i].content + ' ' in tokens[i].all_string:
-            line_number = str(tokens[i].start[0])
-            element_number = str(tokens[i].start[1])
-            print(make_full_message(line_number, element_number, 'C0326'))
+            res.append(make_message_file(tokens[i].start[0],
+                                         tokens[i].start[1],
+                                         'C0326',
+                                         file_name))
 
     elif tokens[i].content in closing_braces:
         if ' ' + tokens[i].content in tokens[i].all_string and tokens[i - 1].content != '\n':
@@ -355,30 +360,60 @@ def check_white_spaces(tokens, i):
                     and tokens[i].start[1] - tokens[i - 1].finish[1] == 1:
                 pass
             else:
-                line_number = str(tokens[i].start[0])
-                element_number = str(tokens[i].start[1])
-                print(make_full_message(line_number, element_number, 'C0326'))
+                res.append(make_message_file(tokens[i].start[0],
+                                             tokens[i].start[1],
+                                             'C0326',
+                                             file_name))
 
     operators = ['==', '!=', '<>', '<=', '>=', '<', '>', '=', '+=', '-=',
                  '*=', '**=', '/=', '//=', '&=', '|=', '^=', '%=', '>>=', '<<=']
     if tokens[i].content in operators:
         if tokens[i].content + ' ' not in tokens[i].all_string and ' ' + tokens[i].content not in tokens[i].all_string:
-            line_number = str(tokens[i].start[0])
-            element_number = str(tokens[i].start[1])
-            print(make_full_message(line_number, element_number, 'C0326'))
+            res.append(make_message_file(tokens[i].start[0],
+                                         tokens[i].start[1],
+                                         'C0326',
+                                         file_name))
+
+    keywords = ['assert', 'del', 'elif', 'except', 'for', 'in', 'is',
+                'if', 'not', 'raise', 'return', 'while', 'yield']
+    if tokens[i].content in keywords:
+        if tokens[i].start[1] - tokens[i - 1].finish[1] > 1 and tokens[i - 1].token_type != 'NL':
+            res.append(make_message_file(tokens[i].start[0],
+                                         tokens[i].start[1],
+                                         'S0004',
+                                         file_name))
+        if tokens[i + 1].start[1] - tokens[i].finish[1] > 1:
+            res.append(make_message_file(tokens[i].start[0],
+                                         tokens[i].start[1],
+                                         'S0005',
+                                         file_name))
+    return res
 
 
 def check_unnecessary_parentheses(tokens, i, file_name):
-    keywords = ['assert', 'del', 'elif', 'except', 'for', 'in', 'if', 'not', 'raise', 'return', 'while', 'yield']
+    keywords = ['assert', 'del', 'elif', 'except', 'for', 'in',
+                'if', 'not', 'raise', 'return', 'while', 'yield']
     if tokens[i].content in keywords:
-        if tokens[i+1].content == '(':
+        if tokens[i + 1].content == '(':
+            br = 1
             n = 2
             while True:
                 if tokens[i + n].content == ')' and (tokens[i + n + 1].content == ':'
                                                      or tokens[i + n + 1].content == '\n'):
-                    return make_message_file(tokens[i + 1].start[0],
-                                             tokens[i + 1].start[1], 'C0325', file_name)
+                    if tokens[i].content == 'except' and n > 3:
+                        pass
+                    else:
+                        return make_message_file(tokens[i + 1].start[0],
+                                                 tokens[i + 1].start[1],
+                                                 'C0325', file_name)
+                if tokens[i + n].content == '(':
+                    br += 1
+                elif tokens[i + n].content == ')':
+                    br -= 1
+                if br == 0 and tokens[i + n].content == ':':
+                    break
                 n += 1
+    return ""
 
 
 def check_multiple_importing(tokens, i, file_name):
@@ -407,6 +442,7 @@ def check_trailing_semicolon(tokens, i, file_name):
         line_number = tokens[i].start[0]
         element_number = tokens[i].start[1]
         return make_message_file(line_number, element_number, 'C0305', file_name)
+
 
 def check_encoding(file_name, encoding):
     actual_encoding = get_encoding(file_name)
@@ -576,6 +612,10 @@ def check_func_spaces_1(tokens, i, lines, file_name):
                 break
             elif tokens[i - j].token_type == "INDENT" \
                     or tokens[i - j].token_type == "DEDENT":
+                j += 1
+            elif tokens[i - j].all_string.lstrip()[0] == '@':
+                if tokens[i - j].content == '@':
+                    nls -= 1
                 j += 1
             else:
                 break

@@ -1,4 +1,4 @@
-from chekers import check_multiple_importing, check_white_spaces, \
+from checkers import check_multiple_importing, check_white_spaces, \
     check_unnecessary_parentheses, check_several_statements, \
     check_trailing_semicolon, blank_line_in_the_end, line_is_long, check_encoding, docstr_line_is_long, \
     check_func_call_space, one_space_between_name_and_operator, check_trailing_space, check_func_args_indent, \
@@ -116,7 +116,7 @@ def main():
         if config['COMMENTS']['Pep8MultiComs'] == 'yes':
             if tokens[i].token_type == "STRING" \
                 and len(tokens[i].content) > 6 \
-                    and tokens[i].content[0] == tokens[i].content[1] == tokens[i].content[2] in ['\'', '"']:
+                    and tokens[i].content[0] == tokens[i].content[1] == tokens[i].content[2] in ['\'', '\"']:
                     if check_is_multi_comment(tokens, i):
                         out = check_multi_comments_pep8(tokens, i)
                         if out:
