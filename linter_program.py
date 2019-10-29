@@ -88,10 +88,10 @@ def main(conf_file, file):
         if config['DEFAULT']['TrailingSemicolon'] == 'no':  # DONE
             check_print(check_trailing_semicolon(tokens, i, file))
 
-        if config['DEFAULT']['MaxLineLength'] != 'no' and tokens[i].start[0] != line:  # almost DONE
+        if config['DEFAULT']['MaxLineLength'] != 'no' and tokens[i].start[0] != line:  # DONE
             if tokens[i].token_type == "COMMENT":
                 length = int(config['DEFAULT']['MaxLineDocCom'])
-                out = line_is_long(tokens[i], length)
+                out = line_is_long(tokens[i], length, file)
             elif tokens[i].token_type == "COM":
                 length = int(config['DEFAULT']['MaxLineDocCom'])
                 out = docstr_line_is_long(tokens[i], length)
@@ -102,33 +102,28 @@ def main(conf_file, file):
                 line = tokens[i].start[0]
                 print(out)
 
-        if config['SPACES']['FuncCallSpace'] != '-':
+        if config['SPACES']['FuncCallSpace'] != '-':  # almost DONE (see functions.py for details)
             check_print(check_func_call_space(tokens, i, config['SPACES']['FuncCallSpace'], file))
 
-        if config['DEFAULT']['SpacesBetweenNameAndOperator'] == str(1):
-            out = one_space_between_name_and_operator(tokens, i)
-            if out != "":
-                print(out)
+        if config['DEFAULT']['SpacesBetweenNameAndOperator'] == str(1):  # DONE
+            check_print(one_space_between_name_and_operator(tokens, i, file))
 
-        if config['DEFAULT']['TrailingSpace'] == 'no':
-            out = check_trailing_space(tokens, i)
-            if out != "":
-                print(out)
+        if config['DEFAULT']['TrailingSpace'] == 'no':  # DONE (no tests are done!!)
+            check_print(check_trailing_space(tokens, i, file))
 
-        if config['COMMENTS']['Pep8SingleComs'] == 'yes':
-            check_single_comments_pep8(tokens, i)
+        if config['COMMENTS']['Pep8SingleComs'] == 'yes':  # DONE
+            out = check_single_comments_pep8(tokens, i, file)
+            if out:
+                for s in out:
+                    print(s)
 
-        if config['COMMENTS']['Pep8MultiComs'] == 'yes':
+        if config['COMMENTS']['Pep8MultiComs'] == 'yes':  # DONE
             if tokens[i].token_type == "STRING" \
                 and len(tokens[i].content) > 6 \
                     and tokens[i].content[0] == tokens[i].content[1] == tokens[i].content[2] in ['\'', '"']:
                     if check_is_multi_comment(tokens, i):
-                        out = check_multi_comments_pep8(tokens, i)
-                        if out:
-                            print(out)
-                        out = check_multi_com_indent(tokens, i)
-                        if out != "":
-                            print(out)
+                        check_print(check_multi_comments_pep8(tokens, i, file))
+                        check_print(check_multi_com_indent(tokens, i, file))
 
         if config['OPTIONAL']['MaxModuleLines'] != 'no':
             modules = ['def', 'if', 'for', 'elif', 'else', 'while', 'try', 'except', 'class']
@@ -162,40 +157,36 @@ def main(conf_file, file):
 
         checked = False
 
-        if config['NAMES']['CheckForbNames'] == 'yes':
-            out = check_is_name_valid(tokens, i)
-            if out != "":
-                print(out)
+        if config['NAMES']['CheckForbNames'] == 'yes':  # DONE
+            check_print(check_is_name_valid(tokens, i, file))
 
-        if config['NAMES']['FuncCase'] == 'snake':
+        if config['NAMES']['FuncCase'] == 'snake':  # DONE
             if is_func_decl(tokens, i):
-                out = is_snake_case(tokens, i)
-                if out:
-                    print(out)
+                check_print(is_snake_case(tokens, i, file))
 
-        if config['NAMES']['FuncCase'] == 'camel':
+        if config['NAMES']['FuncCase'] == 'camel':  # DONE
             if is_func_decl(tokens, i):
-                out = is_camel_case(tokens, i)
-                if out:
-                    print(out)
+                check_print(is_camel_case(tokens, i, file))
 
-        if config['NAMES']['VarNames'] == 'snake':
+        if config['NAMES']['VarNames'] == 'snake':  # DONE
             if tokens[i].token_type == "NAME" and tokens[i + 1].content == "=":
-                out = is_snake_case(tokens, i)
-                if out:
-                    print(out)
+                check_print(is_snake_case(tokens, i, file))
 
-        if config['NAMES']['VarNames'] == 'camel':
+        if config['NAMES']['VarNames'] == 'camel':  # DONE
             if tokens[i].token_type == "NAME" and tokens[i + 1].content == "=":
-                out = is_camel_case(tokens, i)
-                if out:
-                    print(out)
+                check_print(is_camel_case(tokens, i, file))
 
-        if config['NAMES']['ClassNames'] == 'ucamel':
+        if config['NAMES']['ClassNames'] == 'ucamel':  # DONE
             if is_class_decl(tokens, i):
-                out = is_upper_camel(tokens, i)
-                if out:
-                    print(out)
+                check_print(is_upper_camel(tokens, i, file))
+
+        if config['NAMES']['ClassNames'] == 'camel':  # DONE
+            if is_class_decl(tokens, i):
+                check_print(is_camel_case(tokens, i, file))
+
+        if config['NAMES']['ClassNames'] == 'snake':  # DONE
+            if is_class_decl(tokens, i):
+                check_print(is_snake_case(tokens, i, file))
 
         if config['SPACES']['SpacesBetwFuncsInClass'] != 'no':
             spaces = int(config['SPACES']['SpacesBetwFuncsInClass'])
@@ -206,18 +197,14 @@ def main(conf_file, file):
                 class_started = False
 
             if class_started and tokens[i].content == 'def':
-                out = check_func_spaces_1(tokens, i, spaces)
-                if out:
-                    print(out)
+                check_print(check_func_spaces_1(tokens, i, spaces, file))
 
         if config['SPACES']['SpacesBetwFuncNotInClass'] != 'no':
             ext_spaces = int(config['SPACES']['SpacesBetwFuncNotInClass'])
             if not class_started and tokens[i].content == 'def':
-                out = check_func_spaces_1(tokens, i, ext_spaces)
-                if out:
-                    print(out)
+                check_print(check_func_spaces_1(tokens, i, ext_spaces, file))
 
-    if config['DEFAULT']['EndLine'] == 'yes':
+    if config['DEFAULT']['EndLine'] == 'yes':  # DONE
         blank_line_in_the_end(tokens)
 
 

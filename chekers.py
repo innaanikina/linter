@@ -222,21 +222,23 @@ def find_line_start_e(tokens, i):
                 break
         else:
             j += 1
-    # print("Element " + str(tokens[i].start) + " start is " + str(res.start))
     return res
 
 
-def check_trailing_space(tokens, i):
+def check_trailing_space(tokens, i, file_name):
     if tokens[i].content == '\n' and tokens[i - 1].finish[0] == tokens[i].start[0]:
         if tokens[i].start[1] - tokens[i - 1].finish[1] > 0:
-            return make_full_message(tokens[i].start[0], tokens[i].start[1], 'A0005')
+            return make_message_file(tokens[i].start[0], tokens[i].start[1], 'A0005', file_name)
     return ""
 
 
-def one_space_between_name_and_operator(tokens, i):
-    if tokens[i].token_type == "OP" and tokens[i - 1].token_type == "NAME":
+def one_space_between_name_and_operator(tokens, i, file_name):
+    keywords = ['assert', 'del', 'elif', 'except', 'for', 'in',
+                'if', 'not', 'raise', 'return', 'while', 'yield']
+    if tokens[i].token_type == "OP" and tokens[i - 1].token_type == "NAME" \
+            and tokens[i - 1].token_type not in keywords and tokens[i].content != '(':
         if tokens[i].start[1] - tokens[i - 1].finish[1] > 1:
-            return make_full_message(tokens[i].start[0], tokens[i].start[1], 'A0004')
+            return make_message_file(tokens[i].start[0], tokens[i].start[1], 'A0004', file_name)
     return ""
 
 
@@ -284,9 +286,9 @@ def ext_slice_colon_spaces(token, w):
     return ""
 
 
-def line_is_long(token, length):
+def line_is_long(token, length, file_name):
     if token.start[1] > length or token.finish[1] > length:
-        return make_message_line(str(token.start[0]), 'C0301')
+        return make_message_file(token.start[0], token.finish[1], 'C0301', file_name)
     else:
         return ""
 
@@ -298,14 +300,14 @@ def line_is_long_1(token, length, file_name):
         return ""
 
 
-def docstr_line_is_long(token, length):
+def docstr_line_is_long(token, length, file_name):
     start_col = token.start[1]
     lines = token.content.split('\n')
     if start_col + len(lines[0]) > length:
-        return make_full_message(str(token.start[0]), str(start_col + len(lines[0])), 'C0301')
+        return make_message_file(token.start[0], start_col + len(lines[0]), 'C0301', file_name)
     for i in range(1, len(lines)):
         if len(lines[i]) > length:
-            return make_full_message(str(token.start[0] + i), str(len(lines[i])), 'C0301')
+            return make_message_file(token.start[0] + i, len(lines[i]), 'C0301', file_name)
     return ""
 
 
@@ -408,26 +410,28 @@ def check_encoding(file_name, encoding):
         print(make_message_line('0', 'E0501'))
 
 
-def check_single_comments_pep8(tokens, i):
+def check_single_comments_pep8(tokens, i, file_name):
+    res = []
     if tokens[i].token_type == "COMMENT":
         types = ["INDENT", "DEDENT", "ENC", "NL"]
         if tokens[i - 1].token_type not in types and tokens[i].start[1] - tokens[i - 1].finish[1] < 2:
-            print(make_full_message(tokens[i].start[0], tokens[i].start[1], 'S0001'))
+            res.append(make_message_file(tokens[i].start[0], tokens[i].start[1], 'S0001', file_name))
 
         if tokens[i].content[1] != ' ':
-            print(make_full_message(tokens[i].start[0], tokens[i].start[1], 'S0002'))
+            res.append(make_message_file(tokens[i].start[0], tokens[i].start[1], 'S0002', file_name))
         elif tokens[i].content[2] == ' ':
-            print(make_full_message(tokens[i].start[0], tokens[i].start[1], 'S0002'))
+            res.append(make_message_file(tokens[i].start[0], tokens[i].start[1], 'S0002', file_name))
+    return res
 
 
-def check_multi_comments_pep8(tokens, i):
+def check_multi_comments_pep8(tokens, i, file_name):
     lines = tokens[i].content.split('\n')
     if len(lines) == 2 and lines[1][-3:] == '\'\'\'':
-        return make_full_message(tokens[i].finish[0], tokens[i].finish[1], 'A0008')
+        return make_message_file(tokens[i].finish[0], tokens[i].finish[1], 'A0008', file_name)
     return ""
 
 
-def check_multi_com_indent(tokens, i):
+def check_multi_com_indent(tokens, i, file_name):
     j = 1
     res = tokens[i]
     while True:
@@ -443,7 +447,7 @@ def check_multi_com_indent(tokens, i):
         else:
             j += 1
     if tokens[i].start[1] != res.start[1]:
-        return make_full_message(tokens[i].start[0], tokens[i].start[1], 'A0009')
+        return make_message_file(tokens[i].start[0], tokens[i].start[1], 'A0009', file_name)
     return ""
 
 
@@ -509,10 +513,10 @@ def check_eq_spaces_in_func(tokens, i, file_name):
     return "no"
 
 
-def check_is_name_valid(tokens, i):
+def check_is_name_valid(tokens, i, file_name):
     invalid_names = ['l', 'O', 'I']
     if tokens[i].content in invalid_names:
-        return make_full_message(tokens[i].start[0], tokens[i].start[1], 'N0001')
+        return make_message_file(tokens[i].start[0], tokens[i].start[1], 'N0001', file_name)
     return ""
 
 
@@ -523,34 +527,38 @@ def is_ascii(tokens, i):
     return ""
 
 
-def is_snake_case(tokens, i):
+def is_snake_case(tokens, i, file_name):
     word = tokens[i].content
+    if len(word) == 1:
+        return ""
     if tokens[i].content[:2] == tokens[i].content[-2:] == '__':
         word = tokens[i].content[2:-2]
     pattern = re.compile(r'\b_?[a-z]+[0-9]*(_?[0-9a-z]*)*_?\b')
 
     if not pattern.match(word):
-        return make_full_message(tokens[i].start[0], tokens[i].start[1], 'N0003')
+        return make_message_file(tokens[i].start[0], tokens[i].start[1], 'N0003', file_name)
     return ""
 
 
-def is_camel_case(tokens, i):
+def is_camel_case(tokens, i, file_name):
     word = tokens[i].content
     pattern = re.compile(r'\b[a-zA-Z0-9]+\b')
-    if not pattern.match(word) or word == word.upper():
-        return make_full_message(tokens[i].start[0], tokens[i].start[1], 'N0004')
+    if not pattern.match(word) or (word == word.upper() and len(word) > 1):
+        return make_message_file(tokens[i].start[0], tokens[i].start[1], 'N0004', file_name)
     return ""
 
 
-def is_upper_camel(tokens, i):
+def is_upper_camel(tokens, i, file_name):
     word = tokens[i].content
     pattern = re.compile(r'\b([A-Z]+[a-z0-9]*)+\b')
     if not pattern.match(word) or word == word.upper():
-        return make_full_message(tokens[i].start[0], tokens[i].start[1], 'N0005')
+        return make_message_file(tokens[i].start[0], tokens[i].start[1], 'N0005', file_name)
     return ""
 
 
-def check_func_spaces_1(tokens, i, lines):
+def check_func_spaces_1(tokens, i, lines, file_name):
+    if tokens[i - 2].content == ':':
+        return ""
     j = 1
     flag = False
     nls = 0
@@ -569,5 +577,5 @@ def check_func_spaces_1(tokens, i, lines):
     except IndexError:
         pass
     if not flag and nls - 1 != lines:
-        return make_full_message(tokens[i].start[0], tokens[i].start[1], 'L0001')
+        return make_message_file(tokens[i].start[0], tokens[i].start[1], 'L0001', file_name)
     return ""
