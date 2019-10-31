@@ -53,8 +53,7 @@ def is_function(tokens, i):
             try:
                 if tokens[i + j].content == ')':
                     return True
-                else:
-                    j += 1
+                j += 1
             except IndexError:
                 return False
     return False
@@ -71,7 +70,8 @@ def is_func_decl(tokens, i):
 
 def is_class_decl(tokens, i):
     try:
-        if tokens[i - 1].content == "class" and tokens[i].token_type == "NAME":
+        if (tokens[i - 1].content == "class"
+                and tokens[i].token_type == "NAME"):
             return True
     except IndexError:
         return False
@@ -80,7 +80,8 @@ def is_class_decl(tokens, i):
 
 def get_class_start(tokens, i):
     try:
-        if tokens[i - 1].content == "class" and tokens[i].token_type == "NAME":
+        if (tokens[i - 1].content == "class"
+                and tokens[i].token_type == "NAME"):
             return tokens[i - 1].start
     except IndexError:
         return -1, -1
@@ -88,6 +89,8 @@ def get_class_start(tokens, i):
 
 
 def is_end(tokens, i, start):
-    if tokens[i].start[1] == start[1] and tokens[i].token_type != "INDENT" and tokens[i].content != '\n':
+    if (tokens[i].start[1] == start[1]
+            and tokens[i].token_type != "INDENT"
+            and tokens[i].content != '\n'):
         return True
     return False

@@ -1,5 +1,5 @@
-from message import make_message_line, make_full_message, make_mes
-from make_tokens import get_encoding, is_function
+from message import make_mes
+from make_tokens import get_encoding
 import configparser
 import re
 
@@ -31,13 +31,6 @@ def find_last_module_element(tokens, i):
             return tokens[i - j]
         else:
             j += 1
-
-
-def module_lines(tokens, length):
-    if len(tokens) > length:
-        return make_full_message(str(0), str(0), 'A0000')
-    else:
-        return ""
 
 
 def line_break_bin_op(tokens, i, file_name):
@@ -181,27 +174,28 @@ def check_func_args_indent(tokens, i, indent, file_name):
                     br += 1
                 j += 1
         else:
-            if is_function(tokens, i + 2):
-                good_indent = tokens[i + 4]
-                n = 2
-            else:
-                good_indent = tokens[i + 2].start[1]
-                n = 0
-            if tokens[i + 2 + n].content == ')':
+            q = 1
+            while True:
+                if tokens[i + q].content == '(':
+                    good_indent1 = tokens[i + q + 1].start[1]
+                if tokens[i + q].content == '\n':
+                    break
+                q += 1
+            if tokens[i + 2].content == ')':
                 pass
             else:
                 j = 3
                 br = 1
                 while True:
-                    if tokens[i + j + n - 1].content == '\n':
-                        if tokens[i + j + n].start[1] != good_indent:
-                            res.append(make_mes(tokens[i + j + n].start[0],
-                                                tokens[i + j + n].start[1],
+                    if tokens[i + j - 1].content == '\n':
+                        if tokens[i + j].start[1] != good_indent1:
+                            res.append(make_mes(tokens[i + j].start[0],
+                                                tokens[i + j].start[1],
                                                 'I0001',
                                                 file_name))
-                    if tokens[i + j + n].content == '(':
+                    if tokens[i + j].content == '(':
                         br += 1
-                    elif tokens[i + j + n].content == ')':
+                    elif tokens[i + j].content == ')':
                         br -= 1
                     j += 1
                     if br == 0:
@@ -248,7 +242,7 @@ def check_trailing_space(tokens, i, file_name):
         if tokens[i].start[1] - tokens[i - 1].finish[1] > 0:
             return make_mes(tokens[i].start[0],
                             tokens[i].start[1],
-                                     'A0005',
+                            'A0005',
                             file_name)
     return ""
 
@@ -306,20 +300,21 @@ def ext_slice_colon_spaces(token, w, file_name):
                             'A0000',
                             file_name)
         elif (re.search(r'\[\s*\w*\s*:\s*\w*\s*:\s*\w*\s*\]', token.all_string)
-                and not re.search(r'\[\s*\w*\s:\s\w*\s:\s\w*\s*\]',
-                                  token.all_string)):
+              and not re.search(r'\[\s*\w*\s:\s\w*\s:\s\w*\s*\]',
+                                token.all_string)):
             return make_mes(token.start[0],
                             token.start[1],
                             'A0000',
                             file_name)
 
     elif w == 'no':
-        if re.search(r'\[\s*\w*\s*:\s*\w*\s*\]', token.all_string) \
-                and not re.search(r'\[\s*\w*:\w*\s*\]', token.all_string):
+        if (re.search(r'\[\s*\w*\s*:\s*\w*\s*\]', token.all_string)
+                and not re.search(r'\[\s*\w*:\w*\s*\]', token.all_string)):
             return make_mes(token.start[0],
                             token.start[1],
                             'A0000',
                             file_name)
+
         elif re.search(r'\[\s*\w*\s*:\s*\w*\s*:\s*\w*\s*]', token.all_string) \
                 and not re.search(r'\[\s*\w*:\w*:\w*\s*]', token.all_string):
             return make_mes(token.start[0],
@@ -357,11 +352,12 @@ def docstr_line_is_long(token, length, file_name):
     return ""
 
 
-def blank_line_in_the_end(tokens):
-    line_number = str(tokens[-1].start[0])
+def blank_line_in_the_end(tokens, file_name):
     if tokens[-1].content != '\n' and tokens[-2].content != '\n':
-        element_number = str(tokens[-2].finish[1])
-        print(make_full_message(line_number, element_number, 'C0304'))
+        return make_mes(tokens[-1].start[0],
+                        tokens[-2].finish[1],
+                        'C0304',
+                        file_name)
 
 
 def check_white_spaces(tokens, i, file_name):
@@ -446,7 +442,10 @@ def check_unnecessary_parentheses(tokens, i, file_name):
             while True:
                 if (tokens[i + n].content == ')'
                         and (tokens[i + n + 1].content == ':'
-                             or tokens[i + n + 1].content == '\n')):
+                             or tokens[i + n + 1].content == '\n'
+                             or (tokens[i].content == 'for'
+                                 and tokens[i + n + 1].content == 'in'))
+                        and br == 1):
                     if tokens[i].content == 'except' and n > 3:
                         pass
                     elif tokens[i].start[0] != tokens[i + n].start[0]:
@@ -460,6 +459,9 @@ def check_unnecessary_parentheses(tokens, i, file_name):
                 elif tokens[i + n].content == ')':
                     br -= 1
                 if br == 0 and tokens[i + n].content == ':':
+                    break
+                if (tokens[i].content == 'for'
+                        and tokens[i + n + 1].content == 'in'):
                     break
                 n += 1
     return ""

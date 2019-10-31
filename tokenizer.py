@@ -33,7 +33,8 @@ class Tokenizer(object):
         tokens = []
         string_tokens = Tokenizer.make_tokens(s)
         for token in string_tokens:
-            tokens.append(Tokenizer(token[0], token[1], token[2], token[3], token[4]))
+            tokens.append(Tokenizer(token[0], token[1],
+                                    token[2], token[3], token[4]))
         return tokens
 
     @staticmethod
@@ -47,11 +48,13 @@ class Tokenizer(object):
         word_list = []
         brackets = ['(', '[', '{', ')', ']', '}']
         quotes = ['\'', '\"']
-        operators = ['+', '-', '*', '**', '/', '//', '%', '<<', '>>', '&', '|',
-                     '^', '~', '<', '>', '<=', '>=', '==', '!=', '<>', '=', '+=',
-                     '-=', '*=', '/=', '%=', '**=', '//=', 'not', 'and', 'or', '@', '!']
+        operators = ['+', '-', '*', '**', '/', '//', '%', '<<', '>>', '&',
+                     '|', '^', '~', '<', '>', '<=', '>=', '==', '!=', '<>',
+                     '=', '+=', '-=', '*=', '/=', '%=', '**=', '//=',
+                     'not', 'and', 'or', '@', '!']
         operators1 = ['&', '|', '^', '~', '@']
-        operators_d = {'+': '=', '-': '=', '*': '=', '/': '=', '%': '=', '=': '=', '>': '>'}
+        operators_d = {'+': '=', '-': '=', '*': '=', '/': '=',
+                       '%': '=', '=': '=', '>': '>'}
         operators_w = ['and', 'or', 'not', 'in', 'is']
         op_list = []
         operator_is_started = False
@@ -77,10 +80,12 @@ class Tokenizer(object):
             if (col == 0 or counting_spaces) and s[i] == " ":
                 spaces += 1
                 counting_spaces = True
-                if s[i + 1] and s[i + 1] == '#' and result[words_counter - 2][1] != ':':
+                if (s[i + 1] and s[i + 1] == '#'
+                        and result[words_counter - 2][1] != ':'):
                     spaces = 0
                     counting_spaces = False
-            elif spaces > 0 and s[i] != " " and spaces % indent == 0 and s[i] != '\n' and s[i] != '#':
+            elif (spaces > 0 and s[i] != " " and spaces % indent == 0
+                  and s[i] != '\n' and s[i] != '#'):
                 real_ind_depth = col // indent
                 if f_ind and real_ind_depth > indent_depth:
                     q = real_ind_depth - indent_depth
@@ -96,8 +101,9 @@ class Tokenizer(object):
                         words_counter += 1
                     indent_depth = col // indent
                     f_ind = False
-                elif real_ind_depth > indent_depth and (result[words_counter - 1][1] == ':'
-                                                        or result[words_counter - 2][1] == ':'):
+                elif (real_ind_depth > indent_depth
+                      and (result[words_counter - 1][1] == ':'
+                           or result[words_counter - 2][1] == ':')):
                     q = real_ind_depth - indent_depth
                     start = col - q * indent
                     for x in range(q):
@@ -115,13 +121,16 @@ class Tokenizer(object):
                 elif real_ind_depth < indent_depth:
                     q = indent_depth - real_ind_depth
                     for x in range(q):
-                        Tokenizer.add_to_res(result, words_counter, "DEDENT", "",
-                                             (line, col), (line, col), "default")
+                        Tokenizer.add_to_res(result, words_counter,
+                                             "DEDENT", "",
+                                             (line, col), (line, col),
+                                             "default")
                         words_counter += 1
                     indent_depth = col // indent
                 counting_spaces = False
                 spaces = 0
-            elif col == 0 and s[i] != " " and indent_is_on and s[i] != '\n' and s[i] != '#':
+            elif (col == 0 and s[i] != " " and indent_is_on
+                  and s[i] != '\n' and s[i] != '#'):
                 for q in range(indent_depth):
                     Tokenizer.add_to_res(result,
                                          words_counter,
@@ -133,7 +142,9 @@ class Tokenizer(object):
                     words_counter += 1
                 indent_depth = col // indent
                 indent_is_on = False
-            elif spaces > 0 and s[i] != " " and spaces % indent == 0 and s[i] != '\n' and s[i] == '#' and result[words_counter - 2][1] == ':':
+            elif (spaces > 0 and s[i] != " " and spaces % indent == 0
+                  and s[i] != '\n' and s[i] == '#'
+                  and result[words_counter - 2][1] == ':'):
                 f_ind = True
                 spaces = 0
                 counting_spaces = False
@@ -155,12 +166,15 @@ class Tokenizer(object):
             elif word_list and word_list[0] in quotes:
                 word_list.append(s[i])
                 ln = len(word_list)
-                if ln == 2 and word_list and word_list[0] in quotes and s[i] in quotes and s[i + 1] in quotes:
+                if (ln == 2 and word_list and word_list[0] in quotes
+                        and s[i] in quotes and s[i + 1] in quotes):
                     com_started = True
                     line_num = line
                     col_num = col - 1
 
-                if com_started and word_list[ln - 3] in quotes and word_list[ln - 2] in quotes and s[i] in quotes and ln > 3:
+                if (com_started and word_list[ln - 3] in quotes
+                        and word_list[ln - 2] in quotes
+                        and s[i] in quotes and ln > 3):
                     current_word = "".join(word_list)
                     word_list.clear()
                     Tokenizer.add_to_res(result,
@@ -172,7 +186,8 @@ class Tokenizer(object):
                                          "default")  # COM
                     words_counter = len(result)
                     com_started = False
-                elif s[i] == word_list[0] and not com_started and s[i + 1] == s[i]:
+                elif (s[i] == word_list[0]
+                      and not com_started and s[i + 1] == s[i]):
                     pass
                 elif s[i] == word_list[0] and not com_started:
                     current_word = "".join(word_list)
@@ -217,10 +232,12 @@ class Tokenizer(object):
                 elif s[i] == '!' and not operator_is_started:
                     operator_is_started = True
                     op_list.append(s[i])
-                elif (s[i] in operators_d.keys() or s[i] == '<') and not operator_is_started:
+                elif (s[i] in operators_d.keys() or s[i] == '<') \
+                        and not operator_is_started:
                     operator_is_started = True
                     op_list.append(s[i])
-                elif s[i] in ['<', '>', '='] and operator_is_started and op_list[0] == '<':
+                elif (s[i] in ['<', '>', '=']
+                      and operator_is_started and op_list[0] == '<'):
                     op_list.append(s[i])
                     current_word = "".join(op_list)
                     op_list.clear()
@@ -234,7 +251,8 @@ class Tokenizer(object):
                     words_counter += 1
                     operator_is_started = False
 
-                elif operator_is_started and op_list[0] == '!' and s[i] == '=':
+                elif (operator_is_started
+                      and op_list[0] == '!' and s[i] == '='):
                     op_list.append(s[i])
                     current_word = "".join(op_list)
                     op_list.clear()
@@ -248,10 +266,12 @@ class Tokenizer(object):
                     words_counter += 1
                     operator_is_started = False
 
-                elif operator_is_started and s[i] in ['*', '/'] and s[i] == op_list[0]:
+                elif (operator_is_started
+                      and s[i] in ['*', '/'] and s[i] == op_list[0]):
                     op_list.append(s[i])
 
-                elif operator_is_started and len(op_list) == 2 and s[i] == '=':
+                elif (operator_is_started
+                      and len(op_list) == 2 and s[i] == '='):
                     op_list.append(s[i])
                     current_word = "".join(op_list)
                     op_list.clear()
