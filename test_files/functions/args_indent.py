@@ -52,3 +52,35 @@ res = []
 def func0(var1, var2, var3, var4):
     return var1 + var2 + var3 + var4
 
+
+# Correct
+foo1 = func0(1, 2,
+             3, 4)
+
+foo2 = func0(
+    1, 2,
+    3, 4)
+
+f1 = len(func0(1, 2,
+               3, 4))
+
+f11 = len(func0(1, 2,
+                3, 4)
+          + 10)
+
+f2 = len(func0(
+    1, 2,
+    3, 4))
+
+f21 = len(func0(
+    1, 2,
+    3, 4)
+          + 10)
+
+# Incorrect
+foo3 = func0(1, 2,
+    3, 4)
+
+foo4 = func0(1, 2,
+        3, 4)
+

@@ -16,10 +16,10 @@ class Tokenizer(object):
         else:
             token_content = self.content
         return self.token_type \
-               + ' ' + token_content \
-               + ' ' + str(self.start) \
-               + ' ' + str(self.finish) \
-               + ' \"' + self.all_string[:-1] + '\"'
+            + ' ' + token_content \
+            + ' ' + str(self.start) \
+            + ' ' + str(self.finish) \
+            + ' \"' + self.all_string[:-1] + '\"'
 
     @staticmethod
     def write_to_file(result, file_name):
