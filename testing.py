@@ -94,8 +94,8 @@ class Lexer:
                 char = self.get_next_char()
 
             elif char == '\n':
-                start = (self.line_no, self.line_pos + 1)
-                end = (self.line_no, self.line_pos + 2)
+                start = (self.line_no, self.line_pos)
+                end = (self.line_no, self.line_pos + 1)
                 token = Tokens(Tokens.new_line, char, self.lines[self.line_no],
                                self.line_no, self.line_pos + 1, start, end)
                 self.tokens.append(token)
@@ -121,7 +121,7 @@ class Lexer:
                 while char in (string.ascii_letters + string.digits + '_'):
                     word += char
                     char = self.get_next_char()
-                end = (self.line_no, self.line_pos + len(word))
+                end = (self.line_no, self.line_pos)
                 token = Tokens(Tokens.name, word, self.lines[self.line_no],
                                self.line_no, self.line_pos, start, end)
 
@@ -145,8 +145,8 @@ class Lexer:
                 self.tokens.append(token)
 
             elif char in '+-*/=<>:(){},.[]%@!&|^~':
-                start = (self.line_no, self.line_pos + 1)
-                end = (self.line_no, self.line_pos + 2)
+                start = (self.line_no, self.line_pos)
+                end = (self.line_no, self.line_pos + 1)
                 token = Tokens(Tokens.operator, char, self.lines[self.line_no],
                                self.line_no, self.line_pos + 1, start, end)
                 self.tokens.append(token)
@@ -194,8 +194,10 @@ class Lexer:
             if tokens[i].tok_type == 'OP' and tokens[i + 1].tok_type == 'OP':
                 op = tokens[i].content + tokens[i + 1].content
                 if op in Tokens.operators:
+                    end = tokens[i + 1].end
                     tokens.pop(i + 1)
-                    tokens[i].value = op
+                    tokens[i].content = op
+                    tokens[i].end = end
             if tokens[i].tok_type == Tokens.eof:
                 break
 
@@ -219,6 +221,7 @@ class Lexer:
         tokens = self.tokens
         cur_indent = 0
         ind = 4
+        res.append(tokens[0])
         for i in range(1, len(tokens)):
             if (tokens[i].line_num != tokens[i - 1].line_num
                     and tokens[i].line_pos // ind > cur_indent
@@ -239,6 +242,7 @@ class Lexer:
                                   tokens[i].line_num,
                                   tokens[i].line_pos, (0, 0), (0, 0)))
                 cur_indent -= 1
+                res.append(tokens[i])
             else:
                 res.append(tokens[i])
         self.tokens.clear()
